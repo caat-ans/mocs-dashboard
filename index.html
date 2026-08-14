@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MoCS ONE — Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--bg-card:#161b22;--bg-hover:#21262d;
+  --border:#30363d;--text:#e6edf3;--muted:#7d8590;
+  --blue:#58a6ff;--green:#3fb950;--yellow:#d29922;
+  --orange:#ea580c;--red:#f85149;--teal:#2dd4bf;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* HEADER */
+.header{
+  background:var(--bg-card);border-bottom:1px solid var(--border);
+  padding:.75rem 1.5rem;display:flex;align-items:center;
+  justify-content:space-between;position:sticky;top:0;z-index:100
+}
+.hd-brand{font-size:1rem;font-weight:700;
+  background:linear-gradient(135deg,var(--blue),var(--teal));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hd-sub{font-size:.75rem;color:var(--muted);margin-top:1px}
+.hd-right{display:flex;align-items:center;gap:1rem}
+.hd-update{font-size:.75rem;color:var(--muted)}
+.btn-refresh{
+  background:transparent;border:1px solid var(--border);
+  color:var(--muted);padding:.35rem .9rem;border-radius:6px;
+  cursor:pointer;font-size:.8rem;transition:all .2s
+}
+.btn-refresh:hover{border-color:var(--blue);color:var(--blue)}
+
+.main{padding:1.5rem;max-width:1400px;margin:0 auto}
+
+/* LOADING */
+.loading{display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:1rem;padding:4rem;color:var(--muted)}
+.spinner{width:32px;height:32px;border:3px solid var(--border);
+  border-top-color:var(--blue);border-radius:50%;
+  animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* KPI */
+.kpi-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:1rem;margin-bottom:1.5rem
+}
+.kpi{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:10px;padding:1.25rem 1rem;border-top-width:3px
+}
+.kpi-label{font-size:.7rem;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.08em;margin-bottom:.5rem}
+.kpi-val{font-size:2.2rem;font-weight:800;line-height:1}
+.kpi-sub{font-size:.72rem;color:var(--muted);margin-top:.3rem}
+
+/* CHARTS */
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
+@media(max-width:768px){.charts-row{grid-template-columns:1fr}}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.25rem}
+.card-title{font-size:.72rem;font-weight:600;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem}
+.chart-wrap{position:relative;height:240px}
+
+/* TABLE */
+.tbl-header{display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:.75rem;margin-bottom:1rem}
+.filters{display:flex;gap:.5rem;flex-wrap:wrap}
+.fi{
+  background:var(--bg);border:1px solid var(--border);
+  color:var(--text);padding:.4rem .75rem;border-radius:6px;
+  font-size:.82rem;outline:none;transition:border-color .2s
+}
+.fi:focus{border-color:var(--blue)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{text-align:left;padding:.5rem .75rem;color:var(--muted);
+  border-bottom:1px solid var(--border);font-weight:500;
+  font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+td{padding:.55rem .75rem;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:hover td{background:var(--bg-hover)}
+tr:last-child td{border-bottom:none}
+.chg-id{font-family:'Courier New',monospace;color:var(--blue);font-size:.8rem;white-space:nowrap}
+.badge{display:inline-block;padding:.18rem .55rem;border-radius:20px;
+  font-size:.68rem;font-weight:700;white-space:nowrap;letter-spacing:.02em}
+.brief-cell{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.date-cell{white-space:nowrap;font-size:.78rem;color:var(--muted)}
+.overdue-cell{color:var(--red);font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="hd-brand">MoCS ONE Dashboard</div>
+    <div class="hd-sub">ANS Division · CAAT · SharePoint Real-time</div>
+  </div>
+  <div class="hd-right">
+    <span class="hd-update" id="lastUpdate"></span>
+    <button class="btn-refresh" onclick="refresh()">↻ รีเฟรช</button>
+  </div>
+</div>
+
+<div class="main">
+  <div id="loadingDiv" class="loading">
+    <div class="spinner"></div>
+    <div>กำลังโหลดข้อมูล...</div>
+  </div>
+
+  <div id="content" style="display:none">
+    <div class="kpi-grid" id="kpiGrid"></div>
+    <div class="charts-row">
+      <div class="card">
+        <div class="card-title">สัดส่วน CHG Status</div>
+        <div class="chart-wrap"><canvas id="statusChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Cases ต่อทีม</div>
+        <div class="chart-wrap"><canvas id="teamChart"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="tbl-header">
+        <div class="card-title" style="margin:0">รายการ Cases ทั้งหมด</div>
+        <div class="filters">
+          <input class="fi" id="searchInput" placeholder="ค้นหา CHG ID / Brief..." oninput="filterTable()">
+          <select class="fi" id="statusFilter" onchange="filterTable()">
+            <option value="">ทุก Status</option>
+            <option>Submitted</option><option>Under Review</option>
+            <option>Oversight</option><option>Revise</option>
+            <option>Approved</option><option>Acknowledged</option>
+            <option>Rejected</option><option>In Progress</option>
+            <option>Post-Implementation</option><option>Closed</option>
+          </select>
+          <select class="fi" id="teamFilter" onchange="filterTable()">
+            <option value="">ทุก Team</option>
+          </select>
+          <select class="fi" id="gateFilter" onchange="filterTable()">
+            <option value="">ทุก Review Gate</option>
+            <option>Approval required</option>
+            <option>Approval not required</option>
+          </select>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>CHG ID</th><th>Status</th><th>Team</th>
+              <th>CHG in Brief</th><th>ANSP</th>
+              <th>Review Gate</th><th>Implement Date</th>
+            </tr>
+          </thead>
+          <tbody id="caseTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════
+const FLOW_URL = "https://defaultaf3a83b613aa4300a5aeb19c8c423a.5a.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/22/workflows/8a0c3a464dc047f6b2aaa8bee3643872/triggers/manual/paths/invoke?api-version=1";
+
+// ═══════════════════════════════════════════
+// STATUS COLORS
+// ═══════════════════════════════════════════
+const SC = {
+  'Submitted':           {fg:'#3B82F6',bg:'#1e3a5f'},
+  'Under Review':        {fg:'#B7950B',bg:'#3d2e09'},
+  'Oversight':           {fg:'#CB4335',bg:'#4a1a15'},
+  'Revise':              {fg:'#EA580C',bg:'#4a2010'},
+  'Approved':            {fg:'#27AE60',bg:'#0d2e1a'},
+  'Acknowledged':        {fg:'#2DD4BF',bg:'#0a2e2b'},
+  'Rejected':            {fg:'#F85149',bg:'#3d1209'},
+  'In Progress':         {fg:'#3FB950',bg:'#0b2a23'},
+  'Post-Implementation': {fg:'#BC8CFF',bg:'#2d1a50'},
+  'Closed':              {fg:'#7d8590',bg:'#1e2126'},
+};
+
+// ═══════════════════════════════════════════
+// FIELD HELPERS
+// ═══════════════════════════════════════════
+const fv = (o,...keys) => { for(const k of keys){ const v=o[k]; if(v!=null&&v!=='') return v; } return ''; };
+const cv = v => (v&&typeof v==='object') ? v.Value||'' : v||'';
+
+function getStatus(i){ return cv(fv(i,'CHGStatus','CHG_x0020_Status','Status')); }
+function getTeam(i)  { return cv(fv(i,'Team')); }
+function getBrief(i) { return fv(i,'CHG_x0020_in_x0020_brief','CHGinbrief','Brief'); }
+function getANSP(i)  { return cv(fv(i,'ANSP')); }
+function getGate(i)  { return cv(fv(i,'ReviewGate','Review_x0020_Gate')); }
+function getDate(i){
+  const d = fv(i,'ImplementChangeDate','Implement_x0020_Change_x0020_Date');
+  if(!d) return '';
+  const dt = new Date(d);
+  return isNaN(dt) ? '' : dt.toLocaleDateString('th-TH',{year:'2-digit',month:'short',day:'numeric'});
+}
+function isOverdue(i){
+  const d = fv(i,'ImplementChangeDate','Implement_x0020_Change_x0020_Date');
+  if(!d) return false;
+  return new Date(d) < new Date() && !['Closed','Rejected'].includes(getStatus(i));
+}
+
+// ═══════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════
+let allItems = [];
+
+async function fetchAll(){
+  const res = await fetch(FLOW_URL, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({})
+  });
+  if(!res.ok) throw new Error('Flow error: HTTP ' + res.status);
+  const data = await res.json();
+  return data.value || data?.body?.value || data || [];
+}
+
+// ═══════════════════════════════════════════
+// RENDER KPI
+// ═══════════════════════════════════════════
+function renderKPI(items){
+  const total   = items.length;
+  const closed  = items.filter(i=>getStatus(i)==='Closed').length;
+  const reject  = items.filter(i=>getStatus(i)==='Rejected').length;
+  const active  = total - closed - reject;
+  const inProg  = items.filter(i=>getStatus(i)==='In Progress').length;
+  const overdue = items.filter(isOverdue).length;
+  const revise  = items.filter(i=>getStatus(i)==='Revise').length;
+
+  document.getElementById('kpiGrid').innerHTML = [
+    {l:'Cases ทั้งหมด', v:total,   s:'ทุก Status',         c:'var(--blue)'},
+    {l:'Active',        v:active,  s:'ยังไม่ปิด',           c:'var(--yellow)'},
+    {l:'In Progress',   v:inProg,  s:'กำลังดำเนินการ',     c:'var(--green)'},
+    {l:'Overdue',       v:overdue, s:'เลย Implement Date', c:'var(--red)'},
+    {l:'Revise',        v:revise,  s:'รอ ANSP แก้ไข',      c:'var(--orange)'},
+    {l:'Closed',        v:closed,  s:'ปิดเรียบร้อย',        c:'var(--muted)'},
+  ].map(k=>`
+    <div class="kpi" style="border-top-color:${k.c}">
+      <div class="kpi-label">${k.l}</div>
+      <div class="kpi-val" style="color:${k.c}">${k.v}</div>
+      <div class="kpi-sub">${k.s}</div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════
+// RENDER CHARTS
+// ═══════════════════════════════════════════
+let cStatus=null, cTeam=null;
+
+function renderCharts(items){
+  const sc={};
+  items.forEach(i=>{ const s=getStatus(i)||'Unknown'; sc[s]=(sc[s]||0)+1; });
+  const sL=Object.keys(sc), sD=Object.values(sc);
+
+  if(cStatus) cStatus.destroy();
+  cStatus = new Chart(document.getElementById('statusChart'),{
+    type:'doughnut',
+    data:{labels:sL,datasets:[{data:sD,backgroundColor:sL.map(l=>(SC[l]||{fg:'#58a6ff'}).fg),borderWidth:0,hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+      plugins:{legend:{position:'right',labels:{color:'#7d8590',font:{size:11},padding:10,boxWidth:12}}}}
+  });
+
+  const tc={};
+  items.forEach(i=>{ const t=getTeam(i)||'Unknown'; tc[t]=(tc[t]||0)+1; });
+  const tL=Object.keys(tc).sort(), tD=tL.map(t=>tc[t]);
+
+  if(cTeam) cTeam.destroy();
+  cTeam = new Chart(document.getElementById('teamChart'),{
+    type:'bar',
+    data:{labels:tL,datasets:[{label:'Cases',data:tD,backgroundColor:'#58a6ff33',borderColor:'#58a6ff',borderWidth:1.5,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:'#30363d'},ticks:{color:'#7d8590'}},
+              y:{grid:{color:'#30363d'},ticks:{color:'#7d8590',stepSize:1},beginAtZero:true}}}
+  });
+
+  const tf = document.getElementById('teamFilter');
+  tf.innerHTML = '<option value="">ทุก Team</option>'+tL.map(t=>`<option>${t}</option>`).join('');
+}
+
+// ═══════════════════════════════════════════
+// RENDER TABLE
+// ═══════════════════════════════════════════
+function renderTable(items){
+  const tb = document.getElementById('caseTable');
+  if(!items.length){
+    tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">ไม่พบข้อมูล</td></tr>';
+    return;
+  }
+  tb.innerHTML = items.map(item=>{
+    const s=getStatus(item), col=SC[s]||{fg:'#7d8590',bg:'#1e2126'};
+    const od=isOverdue(item), brief=getBrief(item);
+    return `<tr>
+      <td class="chg-id">${item.Title||''}</td>
+      <td><span class="badge" style="background:${col.bg};color:${col.fg}">${s}</span></td>
+      <td>${getTeam(item)}</td>
+      <td class="brief-cell" title="${brief}">${brief}</td>
+      <td>${getANSP(item)}</td>
+      <td style="font-size:.75rem;color:var(--muted)">${getGate(item)}</td>
+      <td class="date-cell ${od?'overdue-cell':''}">${getDate(item)||'—'}${od?' ⚠️':''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterTable(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  const sf=document.getElementById('statusFilter').value;
+  const tf=document.getElementById('teamFilter').value;
+  const gf=document.getElementById('gateFilter').value;
+  renderTable(allItems.filter(i=>
+    (!q||(i.Title||'').toLowerCase().includes(q)||getBrief(i).toLowerCase().includes(q))
+    &&(!sf||getStatus(i)===sf)&&(!tf||getTeam(i)===tf)&&(!gf||getGate(i)===gf)
+  ));
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+async function refresh(){
+  document.getElementById('content').style.display='none';
+  document.getElementById('loadingDiv').style.display='flex';
+  document.getElementById('loadingDiv').innerHTML='<div class="spinner"></div><div>กำลังโหลดข้อมูล...</div>';
+  try{
+    allItems = await fetchAll();
+    renderKPI(allItems);
+    renderCharts(allItems);
+    renderTable(allItems);
+    document.getElementById('lastUpdate').textContent=
+      'อัปเดต '+new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('loadingDiv').style.display='none';
+    document.getElementById('content').style.display='block';
+  }catch(err){
+    document.getElementById('loadingDiv').innerHTML=
+      `<div style="color:var(--red)">⚠️ ${err.message}</div>`;
+  }
+}
+
+refresh();
+</script>
+</body>
+</html>
