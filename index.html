@@ -250,7 +250,7 @@ const msalCfg = {
   },
   cache:{cacheLocation:"sessionStorage",storeAuthStateInCookie:false}
 };
-const loginReq = {scopes:[`${CFG.siteUrl}/.default`]};
+const loginReq = {scopes:["https://caathai.sharepoint.com/.default"]};
 const msal2 = new msal.PublicClientApplication(msalCfg);
 let allItems = [];
 
