@@ -387,8 +387,8 @@ function getServices(i){
 }
 
 // ═══ AI PRODUCTS FIELD HELPERS ════════════════════════
-function getAIStatus(i){return cv(fv(i,'Status'));}
-function getAIType(i){return cv(fv(i,'Product_x0020_Type','ProductType'));}
+function getAIStatus(i){return cv(fv(i,'field_2','Status'));}
+function getAIType(i){return cv(fv(i,'field_1','Product_x0020_Type','ProductType'));}
 function getAICHGID(i){return fv(i,'CHG_x0020_ID','CHGID','Title');}
 function getAIAmdt(i){return fv(i,'AMDT_x0020_Cycle','AMDTCycle');}
 function getAILatest(i){return fv(i,'Latest_x0020_to_x0020_AIS_x0020_Date','LatesttoAISDate','Latest_x0020_to_x0020_AIS');}
