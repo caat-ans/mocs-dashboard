@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MoCS INSIGHT — Change Management Monitoring & Analytics</title>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --brand-blue:#226494;--brand-blue-l:#3d8fc4;
+  --brand-green:#8DC73F;--brand-green-l:#a8dd5a;
+  --brand-grad:linear-gradient(135deg,#226494,#8DC73F);
+  --bg:#071520;--bg-card:#0d2137;--bg-hover:#122d4a;
+  --border:#1e4060;--border-s:#152d48;
+  --text:#e8f4f8;--muted:#6a9bbf;--muted-l:#8ab5d4;
+  --red:#e53935;--orange:#ea580c;--yellow:#f0b429;--green:#8DC73F;--purple:#9c6fdb;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* LOGIN */
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem;
+  background:radial-gradient(ellipse at 55% 45%,#0f2845 0%,#071520 65%)}
+.login-box{background:linear-gradient(170deg,#0f2845,#0a1e38);border:1px solid var(--border);
+  border-radius:20px;padding:2.75rem 2.5rem;text-align:center;max-width:400px;width:100%;
+  box-shadow:0 24px 80px #000a,0 0 0 1px #22649420}
+.login-logo-img{width:200px;margin-bottom:1.25rem;filter:drop-shadow(0 4px 16px #22649440)}
+.login-org{font-size:.7rem;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;margin-bottom:1.5rem}
+.login-div{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin-bottom:1.5rem}
+.login-desc{font-size:.88rem;color:var(--muted-l);margin-bottom:2rem;line-height:1.7}
+.btn-login{background:var(--brand-grad);color:#fff;border:none;padding:.88rem 2rem;border-radius:12px;
+  font-size:.92rem;font-weight:600;cursor:pointer;width:100%;box-shadow:0 4px 24px #22649450;transition:all .25s}
+.btn-login:hover{opacity:.88;transform:translateY(-1px)}
+.login-note{font-size:.7rem;color:var(--muted);margin-top:1.25rem;opacity:.7}
+
+/* HEADER */
+.accent-bar{height:3px;background:var(--brand-grad)}
+.header{background:linear-gradient(180deg,#0f2845,#0d2137);border-bottom:1px solid var(--border-s);
+  padding:.65rem 1.75rem;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100}
+.hd-left{display:flex;align-items:center;gap:.85rem}
+.hd-logo{height:36px;object-fit:contain}
+.hd-div{width:1px;height:24px;background:var(--border)}
+.hd-sub{font-size:.7rem;color:var(--muted)}
+.hd-right{display:flex;align-items:center;gap:.75rem}
+.hd-user{font-size:.75rem;color:var(--muted-l);padding:.22rem .8rem;background:#0a1e38;
+  border-radius:20px;border:1px solid var(--border-s)}
+.hd-update{font-size:.68rem;color:var(--muted);opacity:.7}
+.btn-hd{background:transparent;border:1px solid var(--border-s);color:var(--muted);
+  padding:.3rem .85rem;border-radius:8px;cursor:pointer;font-size:.75rem;transition:all .2s}
+.btn-hd:hover{border-color:var(--brand-blue-l);color:var(--brand-blue-l);background:#22649410}
+.btn-out:hover{border-color:var(--red);color:var(--red);background:#e5393510}
+
+/* TABS + GLOBAL FILTER */
+.tab-strip{background:linear-gradient(180deg,#0d2137,#0a1c30);border-bottom:1px solid var(--border-s);
+  padding:0 1.75rem;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:53px;z-index:99}
+.tabs{display:flex;gap:0}
+.tab-btn{background:transparent;border:none;color:var(--muted);padding:.8rem 1.25rem;
+  font-size:.82rem;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;
+  transition:all .2s;letter-spacing:.01em}
+.tab-btn:hover{color:var(--muted-l)}
+.tab-btn.active{color:var(--text);border-bottom-color:var(--brand-green);font-weight:600}
+.global-filter{display:flex;align-items:center;gap:.75rem;padding:.5rem 0}
+.gf-label{font-size:.72rem;color:var(--muted);letter-spacing:.05em}
+.gf-count{font-size:.72rem;color:var(--muted);opacity:.65}
+.fi{background:#071a2e;border:1px solid var(--border-s);color:var(--text);
+  padding:.32rem .7rem;border-radius:8px;font-size:.78rem;outline:none;transition:all .2s}
+.fi:focus{border-color:var(--brand-blue)}
+
+/* MAIN */
+.main{padding:1.5rem 1.75rem;max-width:1440px;margin:0 auto}
+.tab-content{display:none}.tab-content.active{display:block}
+
+/* LOADING */
+.loading{display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:1rem;padding:5rem;color:var(--muted)}
+.spinner{width:30px;height:30px;border:2.5px solid var(--border);
+  border-top-color:var(--brand-green);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* SECTION LABEL */
+.sec{font-size:.65rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  margin:1.75rem 0 .85rem;display:flex;align-items:center;gap:.75rem;
+  background:var(--brand-grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sec::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border) 0%,transparent 100%);
+  -webkit-text-fill-color:initial}
+
+/* ACTION / SUMMARY CARDS */
+.action-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:.25rem}
+@media(max-width:900px){.action-grid{grid-template-columns:repeat(2,1fr)}}
+.acard{background:linear-gradient(170deg,#0f2845,#0d2137);border:1px solid var(--border-s);
+  border-left:3px solid var(--ac,#1e4060);border-radius:12px;padding:1.1rem 1.1rem 1rem;
+  cursor:pointer;transition:all .22s;user-select:none;position:relative;overflow:hidden}
+.acard::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 0% 50%,color-mix(in srgb,var(--ac,transparent) 8%,transparent) 0%,transparent 70%);
+  pointer-events:none}
+.acard.has{border-left-color:var(--ac);box-shadow:inset 3px 0 12px color-mix(in srgb,var(--ac) 15%,transparent)}
+.acard.has:hover{transform:translateY(-2px);box-shadow:inset 3px 0 16px color-mix(in srgb,var(--ac) 25%,transparent),0 8px 28px #00000050}
+.acard.off{opacity:.4;cursor:default}
+.acard.sel{background:linear-gradient(170deg,#122d4a,#0f2540);
+  border:1px solid var(--ac);border-left:3px solid var(--ac);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--ac) 40%,transparent)}
+.ac-lbl{font-size:.65rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem}
+.ac-val{font-size:2.4rem;font-weight:800;line-height:1;color:var(--ac,var(--muted));font-variant-numeric:tabular-nums}
+.acard.off .ac-val{font-size:1.4rem;opacity:.4}
+.ac-sub{font-size:.68rem;color:var(--muted);margin-top:.35rem;line-height:1.4}
+.ac-hint{font-size:.63rem;margin-top:.6rem;padding:.18rem .5rem;border-radius:4px;display:inline-block;
+  background:color-mix(in srgb,var(--ac) 12%,transparent);color:var(--ac)}
+.ac-ok{font-size:.7rem;color:var(--muted);margin-top:.5rem;opacity:.6}
+
+/* CHARTS */
+.card{background:linear-gradient(170deg,#0f2845,#0d2137);border:1px solid var(--border-s);
+  border-radius:12px;padding:1.25rem 1.25rem 1rem}
+.card-title{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.12em;margin-bottom:1rem}
+.chart-wrap{position:relative;height:220px}
+.charts-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:.25rem}
+.charts-2{display:grid;grid-template-columns:1.35fr 1fr;gap:1rem;margin-bottom:.25rem}
+.charts-1{margin-bottom:.25rem}
+@media(max-width:1050px){.charts-3{grid-template-columns:1fr 1fr}}
+@media(max-width:700px){.charts-3,.charts-2{grid-template-columns:1fr}}
+
+/* TABLE */
+.tbl-header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.1rem}
+.filters{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.btn-clear{background:transparent;border:1px solid var(--border-s);color:var(--muted);
+  padding:.32rem .7rem;border-radius:8px;font-size:.75rem;cursor:pointer;transition:all .2s}
+.btn-clear:hover{border-color:var(--red);color:var(--red)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.81rem}
+th{text-align:left;padding:.45rem .75rem;color:var(--muted);border-bottom:1px solid var(--border-s);
+  font-weight:600;font-size:.63rem;text-transform:uppercase;letter-spacing:.1em;white-space:nowrap}
+td{padding:.52rem .75rem;border-bottom:1px solid var(--border-s);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:linear-gradient(90deg,#122d4a80,#122d4a40)}
+.row-od td:first-child{border-left:2px solid var(--red);box-shadow:inset 3px 0 8px #e5393520}
+.chg-id{font-family:'Courier New',monospace;color:var(--brand-blue-l);font-size:.78rem;font-weight:700;white-space:nowrap}
+.badge{display:inline-block;padding:.2rem .6rem;border-radius:20px;font-size:.63rem;font-weight:700;white-space:nowrap;letter-spacing:.03em}
+.phase-dot{display:inline-flex;align-items:center;gap:.4rem;font-size:.72rem;white-space:nowrap}
+.phase-dot::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--pd,var(--muted));flex-shrink:0}
+.brief-c{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted-l)}
+.date-c{white-space:nowrap;font-size:.76rem;font-variant-numeric:tabular-nums}
+.od-date{color:var(--red);font-weight:600}
+.age-r{text-align:right;font-size:.76rem;font-variant-numeric:tabular-nums;padding-right:1.25rem;font-weight:600}
+.age-ok{color:var(--muted);font-weight:400}.age-w{color:var(--yellow)}.age-d{color:var(--red)}
+.days-ok{color:var(--green)}.days-w{color:var(--yellow)}.days-od{color:var(--red);font-weight:700}
+.tbl-empty{text-align:center;color:var(--muted);padding:3rem;font-size:.85rem;opacity:.6}
+.tbl-info{font-size:.68rem;color:var(--muted);margin-top:.3rem;min-height:.9rem;opacity:.7}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <img src="./MoCS_Insight_2.png" alt="MoCS INSIGHT" class="login-logo-img">
+    <div class="login-org">ANS Department · Civil Aviation Authority of Thailand</div>
+    <div class="login-div"></div>
+    <div class="login-desc">Change Management Monitoring & Analytics<br>ระบบติดตามและวิเคราะห์การบริหารจัดการการเปลี่ยนแปลง</div>
+    <button class="btn-login" onclick="login()">เข้าสู่ระบบด้วย Microsoft Account</button>
+    <div class="login-note">ใช้ account @caat.or.th เท่านั้น</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <div class="accent-bar"></div>
+  <div class="header">
+    <div class="hd-left">
+      <img src="./MoCS_Insight_2.png" alt="MoCS INSIGHT" class="hd-logo">
+      <div class="hd-div"></div>
+      <div class="hd-sub">ANS Department · CAAT</div>
+    </div>
+    <div class="hd-right">
+      <span class="hd-user" id="userName"></span>
+      <span class="hd-update" id="lastUpdate"></span>
+      <button class="btn-hd" onclick="refreshAll()">↻ รีเฟรช</button>
+      <button class="btn-hd btn-out" onclick="logout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <!-- TAB STRIP + GLOBAL FILTER -->
+  <div class="tab-strip">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('overall')">Overall Change</button>
+      <button class="tab-btn" onclick="switchTab('aiproducts')">AI Products</button>
+    </div>
+    <div class="global-filter" id="globalFilterArea">
+      <span class="gf-label">ทีม</span>
+      <select class="fi" id="globalTeam" onchange="onGlobalFilter()">
+        <option value="">ทุกทีม</option>
+      </select>
+      <span class="gf-count" id="globalCount"></span>
+    </div>
+  </div>
+
+  <div class="main">
+    <div id="loadingDiv" class="loading">
+      <div class="spinner"></div><div>กำลังโหลดข้อมูล...</div>
+    </div>
+    <div id="content" style="display:none">
+
+      <!-- ═══ TAB: OVERALL CHANGE ═══ -->
+      <div id="tab-overall" class="tab-content active">
+        <div class="sec">ต้องดำเนินการ</div>
+        <div class="action-grid" id="actionGrid"></div>
+
+        <div class="sec">สถานะปัจจุบัน</div>
+        <div class="charts-3">
+          <div class="card"><div class="card-title">Status — Active Cases</div><div class="chart-wrap"><canvas id="statusChart"></canvas></div></div>
+          <div class="card"><div class="card-title">Cases ต่อทีม</div><div class="chart-wrap"><canvas id="teamChart"></canvas></div></div>
+          <div class="card"><div class="card-title">Cases ต่อ Phase</div><div class="chart-wrap"><canvas id="phaseChart"></canvas></div></div>
+        </div>
+
+        <div class="sec">Trend & Analytics</div>
+        <div class="charts-2">
+          <div class="card"><div class="card-title">Cases รายเดือน — 12 เดือนย้อนหลัง</div><div class="chart-wrap"><canvas id="trendChart"></canvas></div></div>
+          <div class="card"><div class="card-title">Affected Services</div><div class="chart-wrap"><canvas id="serviceChart"></canvas></div></div>
+        </div>
+
+        <div class="sec">รายการ Cases</div>
+        <div class="card">
+          <div class="tbl-header">
+            <div>
+              <div class="card-title" id="tableTitle" style="margin:0">รายการ Cases ทั้งหมด</div>
+              <div id="tableSubtitle" class="tbl-info"></div>
+            </div>
+            <div class="filters">
+              <input class="fi" id="searchInput" placeholder="ค้นหา CHG ID / Brief..." oninput="applyFilters()">
+              <select class="fi" id="statusFilter" onchange="applyFilters()">
+                <option value="">ทุก Status</option>
+                <option>Submitted</option><option>Under Review</option><option>Oversight</option>
+                <option>Revise</option><option>Approved</option><option>Acknowledged</option>
+                <option>Rejected</option><option>In Progress</option>
+                <option>Post-Implementation</option><option>Closed</option>
+              </select>
+              <select class="fi" id="phaseFilter" onchange="applyFilters()">
+                <option value="">ทุก Phase</option>
+                <option>Phase 1 - CHG Notification</option>
+                <option>Phase 2 - Evaluation</option>
+                <option>Phase 3 - Implementation</option>
+                <option>Phase 4 - Verification</option>
+                <option>Phase 5 - Post-Implementation</option>
+                <option>Closed</option>
+              </select>
+              <select class="fi" id="anspFilter" onchange="applyFilters()">
+                <option value="">ทุก ANSP</option>
+              </select>
+              <button class="btn-clear" id="clearBtn" onclick="clearFilter()" style="display:none">✕ ล้าง</button>
+            </div>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>CHG ID</th><th>Status</th><th>Phase</th><th>Team</th>
+                <th>CHG in Brief</th><th>ANSP</th><th>Implement Date</th>
+                <th style="text-align:right;padding-right:1.25rem">อายุ (วัน)</th>
+              </tr></thead>
+              <tbody id="caseTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ TAB: AI PRODUCTS ═══ -->
+      <div id="tab-aiproducts" class="tab-content">
+        <div class="sec">ภาพรวม AI Products</div>
+        <div class="action-grid" id="aiActionGrid"></div>
+
+        <div class="sec">Distribution ต่อประเภท</div>
+        <div class="charts-1">
+          <div class="card"><div class="card-title">Pending vs Completed ต่อ Product Type</div>
+            <div class="chart-wrap" style="height:180px"><canvas id="aiTypeChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="sec">รายการ AI Products</div>
+        <div class="card">
+          <div class="tbl-header">
+            <div>
+              <div class="card-title" style="margin:0">รายการ AI Products ทั้งหมด</div>
+              <div id="aiTableInfo" class="tbl-info"></div>
+            </div>
+            <div class="filters">
+              <input class="fi" id="aiSearch" placeholder="ค้นหา CHG ID / เนื้อหา..." oninput="applyAIFilters()">
+              <select class="fi" id="aiTypeFilter" onchange="applyAIFilters()">
+                <option value="">ทุก Product Type</option>
+              </select>
+              <select class="fi" id="aiStatusFilter" onchange="applyAIFilters()">
+                <option value="">ทุก Status</option>
+                <option>Pending</option><option>Submitted</option><option>Active</option>
+                <option>Published</option><option>Effective</option>
+                <option>Expired</option><option>Cancelled</option><option>Supersede</option>
+              </select>
+            </div>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>CHG ID</th><th>Product Type</th><th>Status</th>
+                <th>AMDT Cycle</th><th>Latest to AIS Date</th>
+                <th>Publication Date</th><th>Effective Date</th>
+                <th style="text-align:right;padding-right:1.25rem">เหลือ (วัน)</th>
+              </tr></thead>
+              <tbody id="aiTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ═══ CONFIG ═══════════════════════════════════════════
+const CFG = {
+  clientId:    "53a3adc6-5aec-4400-8ae4-1c20e4cf1db4",
+  tenantId:    "af3a83b6-13aa-4300-a5ae-b19c8c423a5a",
+  siteUrl:     "https://caathai.sharepoint.com/sites/ANS",
+  redirectUri: "https://caat-ans.github.io/mocs-dashboard/"
+};
+const msalCfg = {
+  auth:{clientId:CFG.clientId,
+    authority:`https://login.microsoftonline.com/${CFG.tenantId}`,
+    redirectUri:CFG.redirectUri},
+  cache:{cacheLocation:"sessionStorage",storeAuthStateInCookie:false}
+};
+const loginReq = {scopes:["https://caathai.sharepoint.com/.default"]};
+const msal2 = new msal.PublicClientApplication(msalCfg);
+
+let allCases=[], allAIProds=[], currentGroup=null;
+const charts={};
+const GC={gridColor:'#1a3a5c',tickColor:'#6a9bbf'};
+const PHASE_C=['#3d8fc4','#f0b429','#8DC73F','#b085f5','#ea580c','#6b7280'];
+
+// ═══ AUTH ══════════════════════════════════════════════
+async function login(){try{await msal2.loginRedirect(loginReq);}catch(e){alert(e.message);}}
+function logout(){msal2.logoutRedirect();}
+async function getToken(){
+  const acc=msal2.getAllAccounts()[0];
+  if(!acc)throw new Error('ไม่พบ account');
+  return(await msal2.acquireTokenSilent({...loginReq,account:acc})).accessToken;
+}
+
+// ═══ STATUS COLORS ════════════════════════════════════
+const SC={
+  'Submitted':{fg:'#3d8fc4',bg:'#0d2137'},'Under Review':{fg:'#f0b429',bg:'#2a1f05'},
+  'Oversight':{fg:'#e07b39',bg:'#2a1508'},'Revise':{fg:'#ea580c',bg:'#2a1205'},
+  'Approved':{fg:'#8DC73F',bg:'#182808'},'Acknowledged':{fg:'#2dd4bf',bg:'#082820'},
+  'Rejected':{fg:'#e53935',bg:'#280808'},'In Progress':{fg:'#a8dd5a',bg:'#1a2808'},
+  'Post-Implementation':{fg:'#b085f5',bg:'#1e1030'},'Closed':{fg:'#6a9bbf',bg:'#0d1a28'},
+};
+const AI_SC={
+  'Pending':{fg:'#f0b429',bg:'#2a1f05'},'Submitted':{fg:'#3d8fc4',bg:'#0d2137'},
+  'Active':{fg:'#8DC73F',bg:'#182808'},'Published':{fg:'#a8dd5a',bg:'#1a2808'},
+  'Effective':{fg:'#226494',bg:'#071520'},'Expired':{fg:'#6a9bbf',bg:'#0d1a28'},
+  'Cancelled':{fg:'#aa4444',bg:'#280808'},'Supersede':{fg:'#9c6fdb',bg:'#1e1030'},
+};
+
+// ═══ CASE FIELD HELPERS ═══════════════════════════════
+const fv=(o,...k)=>{for(const key of k){const v=o[key];if(v!=null&&v!=='')return v;}return '';};
+const cv=v=>(v&&typeof v==='object')?v.Value||'':v||'';
+const dateStr=(d,opts={year:'2-digit',month:'short',day:'numeric'})=>
+  isNaN(new Date(d))?'—':new Date(d).toLocaleDateString('th-TH',opts);
+
+function getStatus(i){return cv(fv(i,'CHGStatus','CHG_x0020_Status'));}
+function getTeam(i){return cv(fv(i,'Team'));}
+function getBrief(i){return fv(i,'CHG_x0020_in_x0020_brief','CHGinbrief');}
+function getANSP(i){return cv(fv(i,'ANSP'));}
+function getPhase(i){
+  if(!i||typeof i!=='object')return '-';
+  return i.Phase?.Value||i.Phase||'-';
+}
+function getImplDate(i){const d=new Date(fv(i,'ImplementChangeDate','Implement_x0020_Change_x0020_Date'));return isNaN(d)?null:d;}
+function getImplDateStr(i){const d=getImplDate(i);return d?d.toLocaleDateString('th-TH',{year:'2-digit',month:'short',day:'numeric'}):'—';}
+function isOverdue(i){const d=getImplDate(i),s=getStatus(i);return d&&d<new Date()&&!['Closed','Rejected'].includes(s);}
+function daysSinceMod(i){const d=new Date(i.Modified);return isNaN(d)?999:Math.floor((new Date()-d)/864e5);}
+function getAge(i){const d=new Date(i.Created);return isNaN(d)?'-':Math.floor((new Date()-d)/864e5);}
+function getServices(i){
+  const v=fv(i,'Affected_x0020_Services','AffectedServices');
+  if(!v)return[];
+  if(typeof v==='string')return v.split(';#').map(s=>s.trim()).filter(s=>s&&!/^\d+$/.test(s));
+  if(Array.isArray(v))return v.map(x=>x.Value||x).filter(Boolean);
+  return[];
+}
+
+// ═══ AI PRODUCTS FIELD HELPERS ════════════════════════
+function getAIStatus(i){return cv(fv(i,'Status'));}
+function getAIType(i){return cv(fv(i,'Product_x0020_Type','ProductType'));}
+function getAICHGID(i){return fv(i,'CHG_x0020_ID','CHGID','Title');}
+function getAIAmdt(i){return fv(i,'AMDT_x0020_Cycle','AMDTCycle');}
+function getAILatest(i){return fv(i,'Latest_x0020_to_x0020_AIS_x0020_Date','LatesttoAISDate','Latest_x0020_to_x0020_AIS');}
+function getAIPub(i){return fv(i,'Publication_x0020_Date','PublicationDate');}
+function getAIEff(i){return fv(i,'Effective_x0020_Date','EffectiveDate');}
+function isAIDone(s){return['Published','Effective','Expired','Cancelled','Supersede'].includes(s);}
+function getDaysLeft(dateStr){
+  if(!dateStr)return null;
+  const d=new Date(dateStr);
+  return isNaN(d)?null:Math.ceil((d-new Date())/864e5);
+}
+
+// ═══ FETCH DATA ═══════════════════════════════════════
+async function fetchList(listName){
+  const token=await getToken();
+  const r=await fetch(
+    `${CFG.siteUrl}/_api/web/lists/getbytitle('${listName}')/items?$top=500&$orderby=ID desc`,
+    {headers:{'Authorization':'Bearer '+token,'Accept':'application/json;odata=verbose'}}
+  );
+  if(!r.ok)throw new Error(listName+': HTTP '+r.status);
+  return(await r.json()).d.results;
+}
+
+// ═══ GLOBAL FILTER (TEAM) ════════════════════════════
+function getFilteredCases(){
+  const team=document.getElementById('globalTeam')?.value||'';
+  return team?allCases.filter(i=>getTeam(i)===team):allCases;
+}
+function onGlobalFilter(){
+  const items=getFilteredCases();
+  const count=items.length;
+  document.getElementById('globalCount').textContent=`(${count} Cases)`;
+  renderActionCards(buildGroups(items));
+  renderOverallCharts(items);
+  currentGroup=null;
+  document.querySelectorAll('.acard').forEach(c=>c.classList.remove('sel'));
+  document.getElementById('clearBtn').style.display='none';
+  applyFilters();
+}
+
+// ═══ TAB SWITCHING ════════════════════════════════════
+function switchTab(name){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.querySelector(`[onclick="switchTab('${name}')"]`).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('globalFilterArea').style.visibility=name==='overall'?'visible':'hidden';
+}
+
+// ═══ CHART HELPER ════════════════════════════════════
+const base={responsive:true,maintainAspectRatio:false};
+function mkChart(id,cfg){if(charts[id])charts[id].destroy();charts[id]=new Chart(document.getElementById(id),cfg);}
+
+// ═══ OVERALL CHARTS ═══════════════════════════════════
+function renderOverallCharts(items){
+  const active=items.filter(i=>!['Closed','Rejected'].includes(getStatus(i)));
+  const selTeam=document.getElementById('globalTeam')?.value||'';
+
+  // Status Donut
+  const sc={};active.forEach(i=>{const s=getStatus(i)||'Unknown';sc[s]=(sc[s]||0)+1;});
+  const sL=Object.keys(sc);
+  mkChart('statusChart',{type:'doughnut',
+    data:{labels:sL,datasets:[{data:Object.values(sc),
+      backgroundColor:sL.map(l=>(SC[l]||{fg:'#3d8fc4'}).fg),borderWidth:0,hoverOffset:4}]},
+    options:{...base,cutout:'62%',
+      plugins:{legend:{position:'right',labels:{color:GC.tickColor,font:{size:10},padding:8,boxWidth:10}}}}
+  });
+
+  // Team Bar (highlight selected)
+  const tc={};allCases.forEach(i=>{const t=getTeam(i)||'?';tc[t]=(tc[t]||0)+1;});
+  const tL=Object.keys(tc).sort();
+  const tColors=tL.map(t=>selTeam===''||selTeam===t?'#226494':'#22649428');
+  const tBorders=tL.map(t=>selTeam===''||selTeam===t?'#3d8fc4':'#22649460');
+  mkChart('teamChart',{type:'bar',
+    data:{labels:tL,datasets:[{label:'Cases',data:tL.map(t=>tc[t]),
+      backgroundColor:tColors,borderColor:tBorders,borderWidth:1.5,borderRadius:3}]},
+    options:{...base,plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:GC.gridColor},ticks:{color:GC.tickColor}},
+              y:{grid:{color:GC.gridColor},ticks:{color:GC.tickColor,stepSize:1},beginAtZero:true}}}
+  });
+
+  // Phase Bar
+  const phases=['Phase 1 - CHG Notification','Phase 2 - Evaluation','Phase 3 - Implementation','Phase 4 - Verification','Phase 5 - Post-Implementation','Closed'];
+  const pc={};active.forEach(i=>{const p=getPhase(i);pc[p]=(pc[p]||0)+1;});
+  mkChart('phaseChart',{type:'bar',
+    data:{labels:phases,datasets:[{label:'Active',data:phases.map(p=>pc[p]||0),
+      backgroundColor:PHASE_C.map(c=>c+'44'),borderColor:PHASE_C,borderWidth:1.5,borderRadius:3}]},
+    options:{...base,plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:GC.gridColor},ticks:{color:GC.tickColor}},
+              y:{grid:{color:GC.gridColor},ticks:{color:GC.tickColor,stepSize:1},beginAtZero:true}}}
+  });
+
+  // Trend Line
+  const months=[];const now=new Date();
+  for(let i=11;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    months.push({label:d.toLocaleDateString('th-TH',{month:'short',year:'2-digit'}),
+      y:d.getFullYear(),m:d.getMonth(),count:0});
+  }
+  items.forEach(i=>{
+    const d=new Date(i.Created);
+    const slot=months.find(s=>s.y===d.getFullYear()&&s.m===d.getMonth());
+    if(slot)slot.count++;
+  });
+  mkChart('trendChart',{type:'line',
+    data:{labels:months.map(m=>m.label),
+      datasets:[{label:'Cases',data:months.map(m=>m.count),
+        borderColor:'#8DC73F',backgroundColor:'#8DC73F22',
+        borderWidth:2,pointRadius:4,pointBackgroundColor:'#8DC73F',tension:.35,fill:true}]},
+    options:{...base,plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:GC.gridColor},ticks:{color:GC.tickColor}},
+              y:{grid:{color:GC.gridColor},ticks:{color:GC.tickColor,stepSize:1},beginAtZero:true}}}
+  });
+
+  // Services Bar
+  const srv={};items.forEach(i=>getServices(i).forEach(s=>{srv[s]=(srv[s]||0)+1;}));
+  const srvL=Object.keys(srv).sort((a,b)=>srv[b]-srv[a]).slice(0,8);
+  mkChart('serviceChart',{type:'bar',
+    data:{labels:srvL,datasets:[{label:'Cases',data:srvL.map(s=>srv[s]),
+      backgroundColor:'#8DC73F44',borderColor:'#8DC73F',borderWidth:1.5,borderRadius:3}]},
+    options:{...base,indexAxis:'y',plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:GC.gridColor},ticks:{color:GC.tickColor}},
+              y:{grid:{color:GC.gridColor},ticks:{color:GC.tickColor}}}}
+  });
+
+  // Populate ANSP filter
+  const ansps=[...new Set(allCases.map(i=>getANSP(i)).filter(Boolean))].sort();
+  const af=document.getElementById('anspFilter');
+  af.innerHTML='<option value="">ทุก ANSP</option>'+ansps.map(a=>`<option>${a}</option>`).join('');
+
+  // Populate Team global filter
+  const gt=document.getElementById('globalTeam');
+  const teams=[...new Set(allCases.map(i=>getTeam(i)).filter(Boolean))].sort();
+  const curVal=gt.value;
+  gt.innerHTML='<option value="">ทุกทีม</option>'+teams.map(t=>`<option>${t}</option>`).join('');
+  gt.value=curVal;
+}
+
+// ═══ ACTION CARDS ════════════════════════════════════
+function buildGroups(items){
+  const now=new Date(),d7=new Date(now.getTime()+7*864e5);
+  return {
+    overdue:{key:'overdue',label:'Overdue',color:'#e53935',hint:'เลย Implement Date ยังไม่ปิด',
+      items:items.filter(i=>isOverdue(i))},
+    due7:{key:'due7',label:'Due ใน 7 วัน',color:'#ea580c',hint:'Implement Date อีก 1–7 วัน',
+      items:items.filter(i=>{const d=getImplDate(i),s=getStatus(i);return d&&d>=now&&d<=d7&&!['Closed','Rejected'].includes(s);})},
+    slowReview:{key:'slowReview',label:'Under Review นาน',color:'#f0b429',hint:'ค้างอยู่ > 15 วัน',
+      items:items.filter(i=>getStatus(i)==='Under Review'&&daysSinceMod(i)>15)},
+    slowRevise:{key:'slowRevise',label:'Revise นาน',color:'#3d8fc4',hint:'รอ ANSP แก้ไข > 30 วัน',
+      items:items.filter(i=>getStatus(i)==='Revise'&&daysSinceMod(i)>30)}
+  };
+}
+
+function renderActionCards(groups){
+  document.getElementById('actionGrid').innerHTML=Object.values(groups).map(g=>{
+    const has=g.items.length>0;
+    return `<div class="acard ${has?'has':'off'}" id="ac-${g.key}" style="--ac:${g.color}"
+      onclick="${has?`toggleGroup('${g.key}')`:''}">>
+      <div class="ac-lbl">${g.label}</div>
+      ${has
+        ?`<div class="ac-val">${g.items.length}</div>
+          <div class="ac-sub">${g.hint}</div>
+          <div class="ac-hint">คลิกเพื่อดูรายการ →</div>`
+        :`<div class="ac-val">—</div>
+          <div class="ac-sub">${g.hint}</div>
+          <div class="ac-ok">✓ ไม่มีรายการ</div>`}
+    </div>`;
+  }).join('');
+}
+
+function toggleGroup(key){
+  if(currentGroup===key){clearFilter();return;}
+  currentGroup=key;
+  document.querySelectorAll('.acard').forEach(c=>c.classList.remove('sel'));
+  document.getElementById('ac-'+key)?.classList.add('sel');
+  document.getElementById('clearBtn').style.display='inline-block';
+  applyFilters();
+}
+function clearFilter(){
+  currentGroup=null;
+  document.querySelectorAll('.acard').forEach(c=>c.classList.remove('sel'));
+  document.getElementById('clearBtn').style.display='none';
+  document.getElementById('tableTitle').textContent='รายการ Cases ทั้งหมด';
+  document.getElementById('tableSubtitle').textContent='';
+  applyFilters();
+}
+
+// ═══ CASE TABLE ══════════════════════════════════════
+function applyFilters(){
+  const groups=buildGroups(getFilteredCases());
+  const q=document.getElementById('searchInput')?.value.toLowerCase()||'';
+  const sf=document.getElementById('statusFilter')?.value||'';
+  const pf=document.getElementById('phaseFilter')?.value||'';
+  const af=document.getElementById('anspFilter')?.value||'';
+  let filtered=getFilteredCases();
+  if(currentGroup&&groups[currentGroup]){
+    const g=groups[currentGroup];
+    filtered=g.items;
+    document.getElementById('tableTitle').textContent=`${g.label} (${filtered.length} Cases)`;
+    document.getElementById('tableSubtitle').textContent=g.hint;
+  }
+  filtered=filtered.filter(i=>
+    (!q||(i.Title||'').toLowerCase().includes(q)||getBrief(i).toLowerCase().includes(q))
+    &&(!sf||getStatus(i)===sf)&&(!pf||getPhase(i)===pf)&&(!af||getANSP(i)===af));
+  renderCaseTable(filtered);
+}
+
+function renderCaseTable(items){
+  const tb=document.getElementById('caseTable');
+  if(!items.length){tb.innerHTML=`<tr><td colspan="8" class="tbl-empty">ไม่พบข้อมูล</td></tr>`;return;}
+  tb.innerHTML=items.map(item=>{
+    const s=getStatus(item),col=SC[s]||{fg:'#6a9bbf',bg:'#0d2137'};
+    const phase=getPhase(item),pi=['Phase 1 - CHG Notification','Phase 2 - Evaluation','Phase 3 - Implementation','Phase 4 - Verification','Phase 5 - Post-Implementation','Closed'].indexOf(phase);
+    const pc=PHASE_C[pi]||'#6a9bbf',od=isOverdue(item),brief=getBrief(item);
+    const age=getAge(item);
+    const ageClass=typeof age==='number'?(age>90?'age-d':age>30?'age-w':'age-ok'):'age-ok';
+    return `<tr class="${od?'row-od':''}">
+      <td class="chg-id">${item.Title||''}</td>
+      <td><span class="badge" style="background:${col.bg};color:${col.fg}">${s}</span></td>
+      <td><span class="phase-dot" style="--pd:${pc};color:${pc}">${phase}</span></td>
+      <td style="color:var(--muted-l)">${getTeam(item)}</td>
+      <td class="brief-c" title="${brief}">${brief}</td>
+      <td style="color:var(--muted)">${getANSP(item)}</td>
+      <td class="date-c ${od?'od-date':''}">${getImplDateStr(item)}${od?' ⚠️':''}</td>
+      <td class="age-r ${ageClass}">${age}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══ AI PRODUCTS ══════════════════════════════════════
+function renderAICards(){
+  const now=new Date(),d14=new Date(now.getTime()+14*864e5);
+  const total=allAIProds.length;
+  const pending=allAIProds.filter(i=>!isAIDone(getAIStatus(i))).length;
+  const overdue=allAIProds.filter(i=>{
+    const dl=getAILatest(i);if(!dl||isAIDone(getAIStatus(i)))return false;
+    return new Date(dl)<now;
+  }).length;
+  const due14=allAIProds.filter(i=>{
+    const dl=getAILatest(i);if(!dl||isAIDone(getAIStatus(i)))return false;
+    const d=new Date(dl);return d>=now&&d<=d14;
+  }).length;
+
+  const cards=[
+    {label:'Total',val:total,hint:'ทั้งหมดใน List',color:'#3d8fc4'},
+    {label:'Pending',val:pending,hint:'ยังไม่เสร็จสิ้น',color:'#f0b429'},
+    {label:'Overdue',val:overdue,hint:'เลย Latest to AIS Date',color:'#e53935'},
+    {label:'Due ใน 14 วัน',val:due14,hint:'ใกล้ถึง Target Date',color:'#ea580c'},
+  ];
+  document.getElementById('aiActionGrid').innerHTML=cards.map(c=>`
+    <div class="acard ${c.val>0?'has':'off'}" style="--ac:${c.color};cursor:default">
+      <div class="ac-lbl">${c.label}</div>
+      <div class="ac-val">${c.val}</div>
+      <div class="ac-sub">${c.hint}</div>
+    </div>`).join('');
+}
+
+function renderAIChart(){
+  const types=[...new Set(allAIProds.map(getAIType).filter(Boolean))];
+  const pendingD=types.map(t=>allAIProds.filter(i=>getAIType(i)===t&&!isAIDone(getAIStatus(i))).length);
+  const doneD=types.map(t=>allAIProds.filter(i=>getAIType(i)===t&&isAIDone(getAIStatus(i))).length);
+  mkChart('aiTypeChart',{type:'bar',
+    data:{labels:types,datasets:[
+      {label:'Pending/Active',data:pendingD,backgroundColor:'#f0b42944',borderColor:'#f0b429',borderWidth:1.5,borderRadius:3},
+      {label:'Completed',data:doneD,backgroundColor:'#8DC73F44',borderColor:'#8DC73F',borderWidth:1.5,borderRadius:3}
+    ]},
+    options:{...base,indexAxis:'y',plugins:{legend:{position:'top',labels:{color:GC.tickColor,font:{size:11},padding:12}}},
+      scales:{x:{grid:{color:GC.gridColor},ticks:{color:GC.tickColor,stepSize:1},beginAtZero:true,stacked:false},
+              y:{grid:{color:GC.gridColor},ticks:{color:GC.tickColor}}}}
+  });
+
+  // Populate type filter
+  const tf=document.getElementById('aiTypeFilter');
+  tf.innerHTML='<option value="">ทุก Product Type</option>'+types.map(t=>`<option>${t}</option>`).join('');
+}
+
+function applyAIFilters(){
+  const q=document.getElementById('aiSearch')?.value.toLowerCase()||'';
+  const tf=document.getElementById('aiTypeFilter')?.value||'';
+  const sf=document.getElementById('aiStatusFilter')?.value||'';
+  const filtered=allAIProds.filter(i=>
+    (!q||getAICHGID(i).toLowerCase().includes(q))
+    &&(!tf||getAIType(i)===tf)
+    &&(!sf||getAIStatus(i)===sf));
+  renderAITable(filtered);
+  document.getElementById('aiTableInfo').textContent=
+    filtered.length<allAIProds.length?`แสดง ${filtered.length} จาก ${allAIProds.length} รายการ`:'';
+}
+
+function renderAITable(items){
+  const tb=document.getElementById('aiTable');
+  if(!items.length){tb.innerHTML=`<tr><td colspan="8" class="tbl-empty">ไม่พบข้อมูล</td></tr>`;return;}
+  const now=new Date();
+  tb.innerHTML=items.map(item=>{
+    const s=getAIStatus(item),col=AI_SC[s]||{fg:'#6a9bbf',bg:'#0d2137'};
+    const dl=getAILatest(item),days=getDaysLeft(dl);
+    const done=isAIDone(s);
+    let daysHtml='<span style="color:var(--muted)">—</span>';
+    if(days!==null&&!done){
+      const cls=days<=0?'days-od':days<=14?'days-w':'days-ok';
+      const label=days<=0?`${Math.abs(days)} วันที่แล้ว ⚠️`:days===0?'วันนี้!':days+' วัน';
+      daysHtml=`<span class="${cls}">${label}</span>`;
+    }else if(done){
+      daysHtml=`<span style="color:var(--muted);opacity:.5">—</span>`;
+    }
+    return `<tr>
+      <td class="chg-id">${getAICHGID(item)}</td>
+      <td style="color:var(--muted-l)">${getAIType(item)}</td>
+      <td><span class="badge" style="background:${col.bg};color:${col.fg}">${s}</span></td>
+      <td style="color:var(--muted)">${getAIAmdt(item)||'—'}</td>
+      <td class="date-c">${dl?dateStr(dl):'—'}</td>
+      <td class="date-c">${getAIPub(item)?dateStr(getAIPub(item)):'—'}</td>
+      <td class="date-c">${getAIEff(item)?dateStr(getAIEff(item)):'—'}</td>
+      <td class="age-r">${daysHtml}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══ INIT ═════════════════════════════════════════════
+async function refreshAll(){
+  document.getElementById('content').style.display='none';
+  document.getElementById('loadingDiv').innerHTML='<div class="spinner"></div><div>กำลังโหลดข้อมูล...</div>';
+  document.getElementById('loadingDiv').style.display='flex';
+  try{
+    [allCases,allAIProds]=await Promise.all([
+      fetchList('ANS-CHG'),
+      fetchList('ANS-CHG-AIProducts')
+    ]);
+    const items=getFilteredCases();
+    document.getElementById('globalCount').textContent=`(${items.length} Cases)`;
+    renderActionCards(buildGroups(items));
+    renderOverallCharts(items);
+    applyFilters();
+    renderAICards();
+    renderAIChart();
+    applyAIFilters();
+    document.getElementById('lastUpdate').textContent=
+      'อัปเดต '+new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('loadingDiv').style.display='none';
+    document.getElementById('content').style.display='block';
+  }catch(err){
+    document.getElementById('loadingDiv').innerHTML=`<div style="color:var(--red)">⚠️ ${err.message}</div>`;
+  }
+}
+
+async function init(){
+  const accs=msal2.getAllAccounts();if(!accs.length)return;
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('userName').textContent=accs[0].name||accs[0].username;
+  await refreshAll();
+}
+
+msal2.handleRedirectPromise().then(r=>{if(r)msal2.setActiveAccount(r.account);init();}).catch(console.error);
+</script>
+</body>
+</html>
