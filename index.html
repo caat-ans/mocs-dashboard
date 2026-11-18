@@ -92,10 +92,16 @@ h1{font-size:28px;font-weight:700;line-height:1.3}
 .legend{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:12px;font-size:13px}
 .sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 .none{font-size:13px;color:var(--ink-3);padding:8px 0}
+.foot a{color:var(--blue-d);font-weight:600}
+.foot a:hover{color:var(--navy)}
 .foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 24px;font-size:12px;color:var(--ink-3);padding-top:24px}
 
 /* KPI cards */
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.flow .kpi{position:relative}
+.flow .kpi[data-op]::before{content:attr(data-op);position:absolute;left:-19px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--num);font-weight:700;font-size:16px;line-height:1;z-index:1}
+.kpi.res{background:var(--blue-t);box-shadow:inset 0 0 0 2px var(--blue)}
+.kpi-n{margin-top:auto}
 .kpi{background:#fff;border-radius:12px;padding:18px 20px 16px;display:flex;flex-direction:column;gap:6px}
 .kpi-l{font-size:14px;color:var(--ink-2);font-weight:500}
 .kpi-v{font-family:var(--num);font-size:52px;font-weight:700;line-height:1}
@@ -280,7 +286,7 @@ body.present .present-bar b{font-size:13px;color:var(--ink-2);font-weight:500}
 @keyframes spin{to{transform:rotate(360deg)}}
 .err{background:var(--red-t);color:var(--red-tx);border-radius:8px;padding:12px 16px;margin:40px auto;max-width:640px}
 
-@media (max-width:1000px){.ctx,.grid2{grid-template-columns:1fr}
+@media (max-width:1000px){.ctx,.grid2{grid-template-columns:1fr}.flow{grid-template-columns:1fr 1fr}.flow .kpi[data-op]::before{left:auto;right:14px;top:14px;transform:none}
   .cr{grid-template-columns:1fr 1fr}.cr > span:first-child{grid-column:1/-1}.cr .rt{text-align:left}}
 @media (max-width:760px){
   .wrap{padding-left:16px;padding-right:16px}
@@ -351,8 +357,8 @@ body.present .present-bar b{font-size:13px;color:var(--ink-2);font-weight:500}
 
       <!-- ═══ ภาพรวม ═══ -->
       <div class="view" id="view-exec">
-        <div class="pagehead"><h1 id="execTitle">ภาพรวม</h1><span class="tagline">ตัวเลขของช่วงที่เลือก · "ยังเปิดอยู่" เป็นสถานะ ณ วันนี้</span></div>
-        <div class="kpis" id="kpis"></div>
+        <div class="pagehead"><h1 id="execTitle">ภาพรวม</h1><span class="tagline" id="execTag" hidden></span></div>
+        <div class="flow" id="kpis"></div>
 
         <div class="row">
           <section class="card" style="flex:3 1 640px" aria-labelledby="h-dur">
@@ -480,7 +486,7 @@ body.present .present-bar b{font-size:13px;color:var(--ink-2);font-weight:500}
         </section>
       </div>
 
-      <footer class="foot"><span>ข้อมูลจาก MoCS ONE · อ่านอย่างเดียว</span><span>พบปัญหาหรือข้อสงสัย ติดต่อ บุ๋น (NA) หรือ CE-5 DEV Team</span></footer>
+      <footer class="foot"><span>ข้อมูลจาก MoCS ONE · อ่านอย่างเดียว</span><span>รายงานปัญหาการใช้งาน <a href="https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=toM6r6oTAEOlrrGcjEI6WtKwxLJZ2l9GvRXYy0wXJ8NURDk2TE1BR1RGMTFOTk5OQVk2Mk1BTk9JUS4u" target="_blank" rel="noopener">คลิกที่นี่</a></span></footer>
     </div>
     <div id="errBox" class="err" hidden></div>
   </main>
@@ -701,33 +707,35 @@ function spark(vals,colorAt,labels){
   const m=Math.max(1,...vals);
   return vals.map((v,k)=>`<i style="height:${v?Math.max(10,Math.round(100*v/m)):6}%;background:${v?colorAt(k):"var(--line-s)"}" title="${esc(labels[k])}: ${v}"></i>`).join("");
 }
-function kpiCard(label,val,unit,color,bars,note){
-  return `<div class="kpi"><span class="kpi-l">${label}</span><span class="kpi-v" style="color:${color}">${val}<small>${unit}</small></span><span class="spark" aria-hidden="true">${bars}</span><span class="kpi-n">${note}</span></div>`;
+function kpiCard(label,val,unit,color,bars,note,op,res){
+  return `<div class="kpi${res?" res":""}"${op?` data-op="${op}"`:""}><span class="kpi-l">${label}</span><span class="kpi-v" style="color:${color}">${val}<small>${unit}</small></span>${bars?`<span class="spark" aria-hidden="true">${bars}</span>`:""}<span class="kpi-n">${note}</span></div>`;
 }
 const vrOf=i=>!!i.OversightRequired0;
+const getEnd=i=>toDate(fv(i,"EndDate","End_x0020_Date"));
+// วันที่ปิดเรื่อง: End Date (MoCS ONE ตั้งเมื่อปิด) ถ้าไม่มีใช้วันแจ้งผล/วันแก้ไขล่าสุด · ไม่ก่อน Start Date
+function closeD(i){ if(isOpen(i)) return null; let d=getEnd(i)||calc[getId(i)].decDate||getModified(i); const s=getStart(i); if(s&&d&&d<s) d=s; return d; }
+const openAt=(d,arr)=>arr.filter(i=>{const s=getStart(i);if(!s||s>d) return false; const c=closeD(i); return !c||c>d;});
 
 function renderExec(){ checkHolidays();
   const t0=today();
   document.getElementById("execTitle").textContent=`${periodLabel()} เป็นอย่างไรบ้าง`;
   const open=allCases.filter(isOpen);
-  const newIn=allCases.filter(i=>inPeriod(getStart(i)));
-  const closedDate=i=>calc[getId(i)].decDate||getModified(i);
-  const closedIn=allCases.filter(i=>!isOpen(i)&&inPeriod(closedDate(i)));
+  const [pa,pb]=periodRange(), endD=pb<t0?pb:t0, dayBefore=new Date(pa.getTime()-dayMs);
+  const carried=openAt(dayBefore,allCases);
+  const newIn=allCases.filter(i=>{const s=getStart(i);return s&&s>=pa&&s<=endD;});
+  const closedIn=allCases.filter(i=>{const c=closeD(i);return c&&c>=pa&&c<=endD;});
+  const endOpen=openAt(endD,allCases);
   const inQ=m=>!qtr||Math.floor(m/3)+1===qtr;
-  const monthly=(arr,fn)=>TH_M.map((_,m)=>arr.filter(i=>{const d=fn(i);return d&&d.getFullYear()===year&&d.getMonth()===m;}).length);
-
-  // ── KPI cards
-  const byPhase=[1,2,3,4,5].map(n=>open.filter(i=>phaseN(i)===n).length);
-  const ovTrk=open.filter(i=>{const c=calc[getId(i)];return c.overdue-c.olaOver>0;}).length;
-  const ovOla=open.filter(i=>calc[getId(i)].olaOver>0).length;
-  const ovAis=open.filter(i=>calc[getId(i)].aiOverdue>0).length;
-  const ovAny=open.filter(i=>{const c=calc[getId(i)];return c.overdue+c.aiOverdue>0;}).length;
   const mLab=TH_M.map(m=>`${m} ${String(year+543).slice(2)}`);
+  const monthly=fn=>TH_M.map((_,m)=>allCases.filter(i=>{const d=fn(i);return d&&d.getFullYear()===year&&d.getMonth()===m;}).length);
+  const monthEndOpen=TH_M.map((_,m)=>{const ms=new Date(year,m,1); if(ms>t0) return 0; const me=new Date(year,m+1,0); return openAt(me<t0?me:t0,allCases).length;});
+  const future=pa>t0, endLabel=pb>=t0?"คงค้าง ณ วันนี้":`คงค้าง ณ สิ้น${qtr?"ไตรมาส":"ปี"}`;
+  const tg=document.getElementById("execTag"); tg.hidden=!future; tg.textContent="ช่วงนี้ยังไม่เริ่ม";
   document.getElementById("kpis").innerHTML=[
-    kpiCard("เรื่องที่ยังเปิดอยู่",open.length,"เรื่อง","var(--ink)",spark(byPhase,()=>"var(--blue-l)",["Phase 1","Phase 2","Phase 3","Phase 4","Phase 5"]),"ณ วันนี้ · แท่ง = Phase 1–5"),
-    kpiCard("เรื่องเข้าใหม่",newIn.length,"เรื่อง","var(--blue)",spark(monthly(allCases,getStart),k=>inQ(k)?"var(--blue)":"var(--blue-l)",mLab),`ตาม Start Date · รายเดือน ปี ${year+543}`),
-    kpiCard("ปิดเรื่องแล้ว",closedIn.length,"เรื่อง","var(--green-ink)",spark(monthly(allCases.filter(i=>!isOpen(i)),closedDate),k=>inQ(k)?"var(--green)":"var(--green-l)",mLab),`รายเดือน ปี ${year+543}`),
-    kpiCard("มีงานเลยกำหนด",ovAny,"เรื่อง",ovAny?"var(--red)":"var(--ink-3)",spark([ovTrk,ovOla,ovAis],()=>"var(--red)",["Tracking","ความเห็นกอง","ส่ง AIS"]),`Tracking ${ovTrk} · ความเห็นกอง ${ovOla} · ส่ง AIS ${ovAis}`)
+    kpiCard("ยกมาจากช่วงก่อน",carried.length,"เรื่อง","var(--ink)","",`ยังไม่ปิด ณ ${fmt(dayBefore)}`),
+    kpiCard("เรื่องเข้าใหม่",newIn.length,"เรื่อง","var(--blue)",spark(monthly(getStart),k=>inQ(k)?"var(--blue)":"var(--blue-l)",mLab),`ตาม Start Date · แท่ง = รายเดือน ปี ${year+543}`),
+    kpiCard("ปิดเรื่อง",closedIn.length,"เรื่อง","var(--green-ink)",spark(monthly(closeD),k=>inQ(k)?"var(--green)":"var(--green-l)",mLab),`ตาม End Date · แท่ง = รายเดือน ปี ${year+543}`),
+    kpiCard(endLabel,endOpen.length,"เรื่อง","var(--navy)",spark(monthEndOpen,k=>inQ(k)?"var(--blue)":"var(--blue-l)",mLab.map(x=>"สิ้น "+x)),`ยังไม่ปิด · แท่ง = ณ สิ้นแต่ละเดือน`,"",true)
   ].join("");
 
   // ── ระยะเวลาพิจารณาคำขอความเห็นชอบ
