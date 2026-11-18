@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MoCS INSIGHT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0E2A44; --navy-2:#1B3A57; --navy-3:#2A4762; --navy-line:#3B5672; --navy-ink:#A9BED2; --navy-ink2:#CFDCE8;
+  --blue:#226494; --blue-d:#1D5E8F; --blue-t:#E4EEF7; --blue-l:#B9CADA;
+  --green:#8DC73F; --green-ink:#3F7D12; --green-l:#C9DDB5;
+  --amber:#F2A93B; --amber-ink:#9A5C00; --amber-t:#FCEFD6; --amber-tx:#7A4B00;
+  --red:#C23A22; --red-t:#FBE3DD; --red-tx:#A12C17; --red-l:#F3C3B8;
+  --grey:#9AAABA;
+  --bg:#EEF2F5; --card:#FFFFFF; --sunk:#F6F8FA; --line:#D3DCE4; --line-s:#E4EAF0;
+  --ink:#13283B; --ink-2:#56697C; --ink-3:#5E7083;
+  --font:'IBM Plex Sans Thai','Segoe UI','Leelawadee UI',system-ui,sans-serif;
+  --num:'Space Grotesk','IBM Plex Sans Thai','Segoe UI',sans-serif;
+}
+html{-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh;font-size:15px;line-height:1.5}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.num{font-family:var(--num);font-variant-numeric:tabular-nums}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wrap{max-width:1280px;margin:0 auto;padding-left:32px;padding-right:32px}
+.mut{color:var(--ink-3)} .bad{color:var(--red);font-weight:600} .warn{color:var(--amber-ink);font-weight:600} .ok{color:var(--green-ink)} .r{text-align:right}
+
+/* Login */
+#loginScreen{min-height:100vh;display:grid;place-items:center;padding:24px;background:var(--navy)}
+.login{width:100%;max-width:420px;background:#fff;border-radius:14px;padding:40px 36px;text-align:center}
+.login img{width:190px;margin-bottom:24px}
+.login h1{font-size:20px;font-weight:700;margin-bottom:6px}
+.login p{color:var(--ink-2);font-size:14px;margin-bottom:28px}
+.btn-primary{background:var(--blue);color:#fff;border:0;border-radius:8px;padding:12px 18px;font-weight:600;cursor:pointer;width:100%;min-height:44px}
+.btn-primary:hover{background:var(--navy)}
+.login small{display:block;margin-top:14px;color:var(--ink-3);font-size:12px}
+
+/* Header */
+.top{background:var(--navy);color:#fff;position:sticky;top:0;z-index:50}
+.top-in{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px;padding-top:14px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-name{font-family:var(--num);font-weight:700;font-size:20px;letter-spacing:.04em;line-height:1.2}
+.brand-name span{color:var(--green)}
+.brand-sub{font-size:12px;color:var(--navy-ink)}
+.top-r{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--navy-ink)}
+.who{color:var(--navy-ink2)}
+.btn-h{border:0;border-radius:6px;padding:8px 16px;min-height:40px;cursor:pointer;background:var(--blue);color:#fff}
+.btn-h:hover{background:#2C77AE}
+.btn-h.ghost{background:transparent;border:1px solid var(--navy-line);color:var(--navy-ink)}
+.btn-h.ghost:hover{color:#fff;border-color:var(--navy-ink)}
+.nav{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:10px 24px;padding-top:12px}
+.tabs{display:flex;flex-wrap:wrap;gap:4px}
+.tab{background:none;border:0;color:var(--navy-ink2);padding:11px 18px;cursor:pointer;border-radius:8px 8px 0 0;min-height:44px}
+.tab:hover{color:#fff}
+.tab[aria-selected="true"]{background:var(--bg);color:var(--navy);font-weight:600}
+.ctl{display:flex;align-items:center;gap:4px;padding-bottom:8px;flex-wrap:wrap}
+.seg{display:inline-flex;background:var(--navy-2);border-radius:17px;padding:3px;gap:2px}
+.seg button{border:0;border-radius:15px;background:transparent;color:var(--navy-ink2);min-height:30px;padding:2px 14px;font-size:13px;font-family:var(--num);cursor:pointer}
+.seg button:hover{color:#fff}
+.seg button[aria-pressed="true"]{background:#fff;color:var(--navy);font-weight:700}
+.sep{width:1px;height:22px;background:var(--navy-line);margin:0 6px}
+.pill{border:1px solid var(--navy-line);background:transparent;color:var(--navy-ink2);border-radius:17px;min-height:34px;padding:4px 12px;font-size:13px;cursor:pointer}
+.pill:hover{color:#fff;border-color:var(--navy-ink)}
+.pill[aria-pressed="true"]{background:var(--green);border-color:var(--green);color:var(--navy);font-weight:600}
+.ysel{background:var(--navy-2);color:#fff;border:1px solid var(--navy-line);border-radius:17px;min-height:34px;padding:4px 12px;font-size:13px}
+
+/* Page */
+main{padding-top:24px;padding-bottom:40px}
+.demo-note{background:var(--amber-t);color:var(--amber-tx);border-radius:8px;padding:8px 14px;font-size:13px;margin-bottom:16px}
+.view{display:flex;flex-direction:column;gap:20px}
+.pagehead{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 20px}
+h1{font-size:28px;font-weight:700;line-height:1.3}
+.tagline{font-size:13px;color:var(--ink-2);background:#fff;border:1px solid var(--line);border-radius:14px;padding:3px 12px}
+.card,.panel{background:var(--card);border-radius:12px;padding:22px 24px;min-width:0}
+.card.dark{background:var(--navy);color:#fff}
+.card h2,.panel h3{font-size:18px;font-weight:700;line-height:1.35}
+.sub,.panel > p{font-size:13px;color:var(--ink-2);margin-top:4px}
+.panel > p{margin-bottom:12px}
+.dark .sub{color:var(--navy-ink)}
+.h2s{font-size:18px;font-weight:700;margin-bottom:12px}
+.h2s span{font-size:13px;font-weight:400;color:var(--ink-2);margin-left:8px}
+.fine,.note{font-size:12px;color:var(--ink-3);margin-top:14px;line-height:1.6}
+.lede{font-size:13px;color:var(--ink-2);margin:4px 0 12px}
+.row{display:flex;flex-wrap:wrap;gap:20px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:12px;font-size:13px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.none{font-size:13px;color:var(--ink-3);padding:8px 0}
+.foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 24px;font-size:12px;color:var(--ink-3);padding-top:24px}
+
+/* KPI cards */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.kpi{background:#fff;border-radius:12px;padding:18px 20px 16px;display:flex;flex-direction:column;gap:6px}
+.kpi-l{font-size:14px;color:var(--ink-2);font-weight:500}
+.kpi-v{font-family:var(--num);font-size:52px;font-weight:700;line-height:1}
+.kpi-v small{font-family:var(--font);font-size:16px;font-weight:500;color:var(--ink-2);margin-left:8px}
+.spark{display:flex;align-items:flex-end;gap:4px;height:34px;margin-top:6px}
+.spark i{flex:1;border-radius:2px 2px 0 0}
+.kpi-n{font-size:12px;color:var(--ink-3)}
+
+/* Duration */
+.dur-top{display:flex;flex-wrap:wrap;gap:14px 40px;margin-top:18px;align-items:flex-end}
+.big{font-family:var(--num);font-size:64px;font-weight:700;line-height:.95;color:var(--blue)}
+.big-u{font-size:16px;color:var(--ink-2);margin-left:8px}
+.trio{display:flex;gap:28px;padding-bottom:6px}
+.trio b{display:block;font-family:var(--num);font-size:26px;font-weight:600;line-height:1.2}
+.trio span{font-size:12px;color:var(--ink-2)}
+.hist{margin-top:22px;display:flex;align-items:flex-end;gap:10px;height:160px;border-bottom:2px solid var(--ink)}
+.hcol{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}
+.hcol b{font-family:var(--num);font-size:14px;font-weight:600;margin-bottom:4px}
+.hcol i{display:block;width:100%}
+.hcol i.run{background:var(--amber)} .hcol i.done{background:var(--blue)}
+.hcol b + i{border-radius:4px 4px 0 0}
+.hlab{display:flex;gap:10px;margin-top:6px}
+.hlab span{flex:1;text-align:center;font-size:12px;color:var(--ink-2)}
+
+/* Notify + outcome */
+.rcol{flex:2 1 380px;min-width:0;display:flex;flex-direction:column;gap:20px}
+.donut-row{display:flex;align-items:center;gap:22px;margin-top:18px}
+.frac{font-family:var(--num);font-size:34px;font-weight:700;line-height:1}
+.frac span{font-size:18px;color:var(--ink-2)}
+.out-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.out-head span{font-size:13px;color:var(--navy-ink)}
+.out-head b{font-family:var(--num);font-size:16px;color:#fff}
+.obar{display:flex;height:14px;border-radius:7px;overflow:hidden;gap:2px;margin-top:14px;background:var(--navy-3)}
+.ogrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.ogrid b{display:block;font-family:var(--num);font-size:26px;font-weight:700;line-height:1.1}
+.ogrid .ol{font-size:13px;font-weight:600}
+.ogrid .of{font-size:12px;color:var(--navy-ink)}
+
+/* OLA + stacked bars */
+.ola-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:14px 32px}
+.stats{display:flex;gap:32px;flex-wrap:wrap}
+.stat{font-family:var(--num);font-size:44px;font-weight:700;line-height:1}
+.stat-c{font-size:12px;color:var(--ink-2)}
+.olarows{margin-top:20px;display:flex;flex-direction:column;gap:12px}
+.olar{display:grid;grid-template-columns:52px minmax(0,1fr) 180px;gap:16px;align-items:center}
+.olar.w{grid-template-columns:96px minmax(0,1fr) 120px}
+.olar > b{font-family:var(--num);font-size:17px}
+.sbar{display:flex;height:26px;border-radius:6px;overflow:hidden;background:var(--bg)}
+.sbar span{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--ink);min-width:0}
+.s-ok{background:var(--green)} .s-late{background:var(--amber)} .s-cl{background:var(--grey)} .s-op{background:var(--blue);color:#fff!important} .s-dn{background:var(--green)}
+.s-pd{background:#fff;border:2px dashed var(--blue);color:var(--blue)!important;border-radius:0 6px 6px 0}
+.s-pd.over{border-color:var(--red);color:var(--red)!important}
+.olar .pt{font-size:13px}
+
+/* Exceptions + upcoming */
+.exl{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+.ex{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;align-items:start;background:var(--sunk);border:1px solid transparent;border-radius:10px;padding:12px 14px;cursor:pointer;text-align:left;width:100%}
+.ex:hover{border-color:var(--blue);background:#fff}
+.tag{font-size:12px;font-weight:600;padding:4px 10px;border-radius:12px;white-space:nowrap}
+.tag.red{background:var(--red);color:#fff} .tag.amb{background:#FCE7C4;color:var(--amber-tx)}
+.cid{font-family:var(--num);font-weight:700;font-size:14px;color:var(--blue-d);margin-right:8px}
+.why{display:block;font-size:13px;color:var(--ink-2);margin-top:2px}
+.tl{list-style:none;margin-top:18px;padding-left:18px;border-left:2px solid var(--line);display:flex;flex-direction:column;gap:14px}
+.tl li{position:relative}
+.tl .dot{position:absolute;left:-26px;top:4px;width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid var(--grey)}
+.tl .dot.vr{background:var(--blue-d);border-color:var(--blue-d)}
+.tl-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+.tl-h .d{font-family:var(--num);font-weight:700;font-size:15px;min-width:86px}
+.tl-h .in{font-size:12px;color:var(--ink-2)}
+.lnk{background:none;border:0;padding:0;cursor:pointer;font-family:var(--num);font-weight:700;font-size:14px;color:var(--blue-d);margin-right:8px;text-decoration:underline;text-underline-offset:2px}
+
+/* Route */
+.route{background:var(--navy);color:#fff;border-radius:12px;padding:22px 24px 20px}
+.route-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 20px}
+.route-head h2{font-size:18px;font-weight:700}
+.route-head span{font-size:13px;color:var(--navy-ink)}
+.route-head b{font-family:var(--num);font-size:18px;color:#fff}
+.route-sc{overflow-x:auto;margin-top:18px}
+.wps{list-style:none;display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));min-width:760px;position:relative}
+.wps::before{content:"";position:absolute;left:8%;right:8%;top:34px;border-top:2px dashed var(--navy-line)}
+.wp{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 6px;background:none;border:0;color:inherit;cursor:pointer;width:100%}
+.wp-c{width:68px;height:68px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--num);font-size:26px;font-weight:700;background:#fff;color:var(--navy);border:4px solid var(--green)}
+.wp.flag .wp-c{border-color:var(--amber)}
+.wp.zero .wp-c,.wp.closed .wp-c{background:var(--navy-3);color:var(--navy-ink);border-color:var(--navy-3)}
+.wp:hover .wp-c{box-shadow:0 0 0 3px var(--navy-line)}
+.wp[aria-pressed="true"] .wp-c{background:var(--green);color:var(--navy);border-color:#fff}
+.wp-k{font-weight:600;font-size:14px}
+.wp-s{font-size:12px;color:var(--navy-ink);text-align:center}
+.wp-f{font-size:12px;font-weight:600;padding:2px 10px;border-radius:10px;color:#8DA5BC}
+.wp.flag .wp-f{background:var(--amber);color:var(--navy)}
+
+/* Attention tiles */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.tile{text-align:left;border-radius:12px;padding:16px 16px 14px;cursor:pointer;display:flex;flex-direction:column;gap:4px;min-height:132px;background:#fff;border:1px solid var(--line);color:var(--ink)}
+.tile:hover{border-color:var(--blue)}
+.tile-top{display:flex;align-items:center;justify-content:space-between;width:100%}
+.tile-n{font-family:var(--num);font-size:40px;font-weight:700;line-height:1}
+.tile-tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:var(--bg);color:var(--ink-2)}
+.tile-t{font-weight:600;font-size:15px;margin-top:4px}
+.tile-d{font-size:12px;color:var(--ink-2)}
+.tile.hot{border-color:#F1C6BC}.tile.hot .tile-n{color:var(--red)}.tile.hot .tile-tag{background:var(--red-t);color:var(--red-tx)}
+.tile.warm{border-color:#F3DDB4}.tile.warm .tile-n{color:var(--amber-ink)}.tile.warm .tile-tag{background:var(--amber-t);color:var(--amber-tx)}
+.tile.zero .tile-n{color:var(--ink-3)}
+.tile[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.tile[aria-pressed="true"] .tile-n{color:#fff}
+.tile.hot[aria-pressed="true"] .tile-n{color:#FFB4A6}
+.tile[aria-pressed="true"] .tile-d{color:var(--navy-ink)}
+.tile[aria-pressed="true"] .tile-tag{background:var(--green);color:var(--navy)}
+
+/* Case list */
+.lhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px 24px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.fi{font-size:14px;border:1px solid #C5D1DC;border-radius:8px;padding:9px 12px;min-height:42px;background:var(--sunk);color:var(--ink);min-width:0}
+.fi:focus{border-color:var(--blue);outline:none;background:#fff}
+input.fi{width:240px}
+.btn-q{background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 14px;min-height:42px;font-size:14px;cursor:pointer;color:var(--ink)}
+.btn-q:hover{border-color:var(--blue);color:var(--blue-d)}
+.btn-q:disabled{opacity:.45;cursor:not-allowed}
+.chipf{display:inline-flex;align-items:center;gap:8px;background:var(--blue-t);color:var(--navy);border-radius:16px;padding:3px 4px 3px 12px;font-size:13px;margin-top:8px}
+.chipf button{border:0;background:#fff;color:var(--navy);border-radius:12px;min-width:32px;min-height:26px;cursor:pointer}
+.cases{margin-top:16px;display:flex;flex-direction:column;gap:10px}
+.cr{display:grid;grid-template-columns:minmax(0,2.3fr) minmax(0,1.3fr) minmax(0,1.6fr) 110px 84px;gap:10px 20px;align-items:center;background:var(--sunk);border:1px solid transparent;border-radius:10px;padding:14px 16px;cursor:pointer}
+.cr:hover{border-color:var(--blue);background:#fff}
+.cr .t{display:block;font-weight:600;margin-top:2px}
+.cr .m{display:block;font-size:12px;color:var(--ink-2)}
+.cr .pl{display:block;font-size:13px}
+.chip{display:inline-block;font-size:12px;font-weight:600;padding:2px 10px;border-radius:10px;margin:2px 4px 2px 0}
+.chip.red{background:var(--red);color:#fff} .chip.amb{background:var(--amber-t);color:var(--amber-tx)} .chip.grey{background:var(--bg);color:var(--ink-2)}
+.rt{text-align:right}
+.lab{display:block;font-size:11px;color:var(--ink-2)}
+.empty{text-align:center;color:var(--ink-3);padding:40px 16px;background:var(--sunk);border-radius:10px}
+
+/* Tables (AI, ANSP) */
+.tbl{overflow-x:auto;margin-top:16px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-weight:600;font-size:12px;color:var(--ink-2);padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:12px 14px;border-bottom:1px solid var(--line-s);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+tr.link{cursor:pointer} tr.link:hover td{background:var(--sunk)}
+td.empty{background:none}
+.id{font-family:var(--num);font-weight:700;color:var(--blue-d);white-space:nowrap}
+.badge{display:inline-block;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;white-space:nowrap}
+
+/* ANSP performance */
+#anspBody{display:flex;flex-direction:column;gap:20px}
+.krows{display:flex;flex-direction:column}
+.krow{display:grid;grid-template-columns:minmax(220px,1.2fr) 2fr 160px;gap:18px;align-items:center;padding:16px 0;border-top:1px solid var(--line-s)}
+.krow:first-child{border-top:0}
+.krow-name b{display:block;font-size:15px;font-weight:600}
+.krow-name span{font-size:12px;color:var(--ink-2)}
+.bar{height:14px;background:var(--bg);border-radius:7px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--blue);border-radius:7px}
+.krow-val{text-align:right}
+.krow-val b{font-family:var(--num);font-size:30px;font-weight:700}
+.krow-val span{display:block;font-size:12px;color:var(--ink-2)}
+.qtrs{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.qtrs span{font-size:12px;background:var(--bg);border-radius:4px;padding:1px 8px;color:var(--ink-2);font-family:var(--num)}
+.ctx{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.ctx .panel > b{font-family:var(--num);font-size:44px;font-weight:700;line-height:1.1}
+.split{display:flex;gap:16px;margin-top:8px;font-size:13px;color:var(--ink-2);flex-wrap:wrap}
+.split strong{color:var(--ink);font-family:var(--num)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.list{list-style:none}
+.list li{display:flex;gap:14px;align-items:baseline;padding:10px 0;border-top:1px solid var(--line-s)}
+.list li:first-child{border-top:0}
+.list .when{min-width:86px;font-size:13px;color:var(--ink-2);font-family:var(--num)}
+.list .what{flex:1;min-width:0}
+.list .what b{font-family:var(--num);font-weight:700;color:var(--blue-d);margin-right:6px}
+.list .what div{font-size:12px;color:var(--ink-3)}
+section.internal{background:#fff;border-radius:12px;padding:22px 24px}
+section.internal h2{font-size:18px;font-weight:700}
+section.internal .tbl{margin-top:0}
+
+/* Presentation mode (show to ANSP) */
+.present-bar{display:none}
+body.present .top, body.present .demo-note, body.present .internal{display:none!important}
+body.present .present-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:16px}
+body.present .present-bar b{font-size:13px;color:var(--ink-2);font-weight:500}
+
+.loading{display:flex;flex-direction:column;align-items:center;gap:12px;padding:80px 0;color:var(--ink-3)}
+.spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err{background:var(--red-t);color:var(--red-tx);border-radius:8px;padding:12px 16px;margin:40px auto;max-width:640px}
+
+@media (max-width:1000px){.ctx,.grid2{grid-template-columns:1fr}
+  .cr{grid-template-columns:1fr 1fr}.cr > span:first-child{grid-column:1/-1}.cr .rt{text-align:left}}
+@media (max-width:760px){
+  .wrap{padding-left:16px;padding-right:16px}
+  .top{position:static}.brand-sub,.who{display:none}
+  h1{font-size:24px} .kpi-v{font-size:44px} .big{font-size:52px}
+  .card,.panel,.route,section.internal{padding:18px 16px}
+  .olar,.olar.w{grid-template-columns:52px minmax(0,1fr)}.olar .pt{grid-column:2}
+  .krow{grid-template-columns:1fr;gap:8px}.krow-val{text-align:left}
+  input.fi{width:100%}
+  .hist{gap:4px}.hlab{gap:4px}.hlab span{font-size:10px}
+}
+@media print{
+  .top,.present-bar,.demo-note,.internal,.fine.hint{display:none!important}
+  body{background:#fff}main{padding:0}
+  .card,.panel,.kpi{break-inside:avoid;border:1px solid var(--line)}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<div id="loginScreen" hidden>
+  <div class="login">
+    <img src="./MoCS_Insight_2.png" alt="MoCS INSIGHT">
+    <h1>MoCS INSIGHT</h1>
+    <p>ติดตามและวิเคราะห์การเปลี่ยนแปลงของผู้ให้บริการการเดินอากาศ<br>ฝ่ายมาตรฐานบริการการเดินอากาศ กพท.</p>
+    <button class="btn-primary" onclick="login()">เข้าสู่ระบบด้วยบัญชี Microsoft</button>
+    <small>ใช้บัญชี @caat.or.th</small>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <header class="top">
+    <div class="wrap top-in">
+      <div class="brand">
+        <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="7" fill="#226494"/><path d="M8 22 L14 15 L19 19 L26 10" fill="none" stroke="#8DC73F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="26" cy="10" r="2.6" fill="#FFFFFF"/></svg>
+        <div><div class="brand-name">MoCS <span>INSIGHT</span></div><div class="brand-sub">ภาพรวมการกำกับดูแลการเปลี่ยนแปลง · ฝ่าย ANS</div></div>
+      </div>
+      <div class="top-r">
+        <span class="who" id="userName"></span>
+        <span id="lastUpdate"></span>
+        <button type="button" class="btn-h" onclick="refreshAll()">รีเฟรช</button>
+        <button type="button" class="btn-h ghost" onclick="logout()">ออกจากระบบ</button>
+      </div>
+    </div>
+    <div class="wrap nav">
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab" role="tab" aria-selected="true"  data-tab="exec">ภาพรวม</button>
+        <button type="button" class="tab" role="tab" aria-selected="false" data-tab="tasks">งานที่ต้องติดตาม</button>
+        <button type="button" class="tab" role="tab" aria-selected="false" data-tab="ansp">ANSP Performance</button>
+        <button type="button" class="tab" role="tab" aria-selected="false" data-tab="ai">AI Products</button>
+      </div>
+      <div class="ctl" id="periodCtl" role="group" aria-label="ช่วงเวลา"></div>
+      <div class="ctl" id="teamChips" role="group" aria-label="ทีม" hidden></div>
+    </div>
+  </header>
+
+  <div class="wrap present-bar">
+    <b id="presentLabel"></b>
+    <div style="display:flex;gap:8px"><button type="button" class="btn-q" onclick="window.print()">พิมพ์ / บันทึก PDF</button><button type="button" class="btn-q" onclick="setPresent(false)">ออกจากโหมดนำเสนอ</button></div>
+  </div>
+
+  <main class="wrap">
+    <div id="holNote" class="demo-note" hidden></div>
+    <div id="demoNote" class="demo-note" hidden>โหมดตัวอย่าง: ข้อมูลในหน้านี้เป็นข้อมูลสมมติ ไม่ได้ดึงจาก SharePoint</div>
+    <div id="loadingDiv" class="loading"><div class="spin"></div><div>กำลังโหลดข้อมูล</div></div>
+    <div id="content" hidden>
+
+      <!-- ═══ ภาพรวม ═══ -->
+      <div class="view" id="view-exec">
+        <div class="pagehead"><h1 id="execTitle">ภาพรวม</h1><span class="tagline">ตัวเลขของช่วงที่เลือก · "ยังเปิดอยู่" เป็นสถานะ ณ วันนี้</span></div>
+        <div class="kpis" id="kpis"></div>
+
+        <div class="row">
+          <section class="card" style="flex:3 1 640px" aria-labelledby="h-dur">
+            <h2 id="h-dur">พิจารณาคำขอความเห็นชอบใช้เวลาเท่าไร</h2>
+            <p class="sub">ขั้นที่ 2–4 · วันทำการ · ไม่นับช่วงรอเอกสารจากผู้ขอ</p>
+            <div class="dur-top" id="durTop"></div>
+            <div class="hist" id="hist" role="img"></div>
+            <div class="hlab" id="hlab" aria-hidden="true"></div>
+            <div class="legend">
+              <span><i class="sw" style="background:var(--blue)"></i>แจ้งผลแล้ว</span>
+              <span><i class="sw" style="background:var(--amber)"></i>ยังพิจารณาอยู่ (นับถึงวันนี้ ไม่นับเรื่องที่รอผู้ขอ)</span>
+            </div>
+            <p class="fine">นับเฉพาะเวลาของ กพท. (ขั้นที่ 2–4) เป็นวันทำการ ตั้งแต่ Start Date หรือวันที่ได้รับเอกสารที่ขอเพิ่มครบครั้งล่าสุด ถึงวันที่บันทึก Records "ผลการพิจารณา" รายการแรก · ไม่มีเส้นกรอบเวลารวม เพราะระยะเวลาเป็นไปตามกระบวนงานที่เกี่ยวข้องของแต่ละเรื่อง (CAAT-ANS-OPM 6.7) · ชี้ที่แท่งเพื่อดูรายชื่อเรื่อง</p>
+          </section>
+          <div class="rcol">
+            <section class="card" style="flex:2 1 auto" aria-labelledby="h-ntf">
+              <h2 id="h-ntf">แจ้งเพื่อทราบ รับทราบทันไหม</h2>
+              <p class="sub" id="ntfSub"></p>
+              <div id="notify"></div>
+            </section>
+            <section class="card dark" style="flex:1 1 auto" aria-labelledby="h-out">
+              <div class="out-head"><h2 id="h-out">ผลการพิจารณา</h2><span><b id="outTotal">0</b> เรื่อง</span></div>
+              <div id="outcome"></div>
+            </section>
+          </div>
+        </div>
+
+        <section class="card" aria-labelledby="h-ola">
+          <div class="ola-head">
+            <div><h2 id="h-ola">กองที่เกี่ยวข้องตอบทันไหม</h2><p class="sub">กำหนดตอบ 5 วันทำการ นับจากวันที่ได้รับ E-mail ขอความเห็น</p></div>
+            <div class="stats" id="olaStats"></div>
+          </div>
+          <div class="olarows" id="olaRows"></div>
+          <div class="legend">
+            <span><i class="sw" style="background:var(--green)"></i>ตอบทันกำหนด</span>
+            <span><i class="sw" style="background:var(--amber)"></i>ตอบเกินกำหนด</span>
+            <span><i class="sw" style="background:var(--grey)"></i>แจ้งผลก่อนกองตอบ</span>
+            <span><i class="sw" style="background:#fff;border:2px dashed var(--blue)"></i>รอความเห็นอยู่ ณ วันนี้</span>
+          </div>
+          <p class="fine">นับรายการ Tracking ประเภท "ความเห็นกองที่เกี่ยวข้อง" ที่ระบบตั้งเมื่อเรื่องเข้าสู่ Phase 2 (เริ่มใช้ 18 พ.ย. 2569) · แถบสีเขียว ส้ม เทา = รายการที่ตั้งในช่วงที่เลือกและปิดแล้ว · ทันกำหนด = กองกด "บันทึกความเห็นของกอง" ไม่เกิน Follow-up Date · แถบเส้นประ = รออยู่ ณ วันนี้</p>
+        </section>
+
+        <div class="row">
+          <section class="card" style="flex:1 1 520px" aria-labelledby="h-ex">
+            <h2 id="h-ex">เรื่องที่ควรรู้ตอนนี้</h2>
+            <p class="sub">ความเห็นกองเลยกำหนด เลยกำหนดส่ง AIS และรอผู้ขอนานผิดปกติ</p>
+            <div class="exl" id="exceptions"></div>
+          </section>
+          <section class="card" style="flex:1 1 520px" aria-labelledby="h-up">
+            <h2 id="h-up">จะเริ่มดำเนินการใน 60 วัน</h2>
+            <p class="sub">ใช้วางแผนการตรวจ ณ สถานที่ · <span style="color:var(--blue-d)">●</span> ต้องตรวจก่อนเปิดให้บริการ (Verification Required)</p>
+            <ol class="tl" id="upcoming"></ol>
+            <div id="upMore"></div>
+          </section>
+        </div>
+      </div>
+
+      <!-- ═══ งานที่ต้องติดตาม ═══ -->
+      <div class="view" id="view-tasks" hidden>
+        <div class="pagehead"><h1>วันนี้ต้องตามอะไรบ้าง</h1><span class="tagline">สถานะ ณ วันนี้</span></div>
+        <section class="route" aria-labelledby="h-route">
+          <div class="route-head">
+            <h2 id="h-route">เส้นทางของเรื่อง</h2>
+            <span><b class="num" id="openTotal">0</b> เรื่องยังไม่ปิด · กดที่จุดเพื่อดูรายการ</span>
+          </div>
+          <div class="route-sc"><ol class="wps" id="waypoints"></ol></div>
+        </section>
+        <section aria-labelledby="h-att">
+          <h2 class="h2s" id="h-att">ต้องดูวันนี้ <span>กดเพื่อกรองรายการ กดซ้ำเพื่อยกเลิก</span></h2>
+          <div class="tiles" id="attention"></div>
+        </section>
+        <section class="card" aria-labelledby="tableTitle">
+          <div class="lhead">
+            <div><h2 id="tableTitle">รายการเรื่อง</h2><div id="activeFilter"></div></div>
+            <div class="filters">
+              <input class="fi" id="searchInput" type="search" placeholder="ค้นหา CHG ID หรือรายละเอียด" aria-label="ค้นหา">
+              <select class="fi" id="statusFilter" aria-label="สถานะ"></select>
+              <select class="fi" id="anspFilter" aria-label="ANSP"></select>
+              <select class="fi" id="scopeFilter" aria-label="ขอบเขต"><option value="open">ยังไม่ปิด</option><option value="closed">ปิดแล้ว</option><option value="">ทั้งหมด</option></select>
+            </div>
+          </div>
+          <div class="cases" id="caseTable"></div>
+          <p class="fine hint">กดที่รายการเพื่อเปิดเรื่องใน MoCS ONE</p>
+        </section>
+      </div>
+
+      <!-- ═══ ANSP PERFORMANCE ═══ -->
+      <div class="view" id="view-ansp" hidden>
+        <div class="pagehead">
+          <div><h1 id="anspTitle">ANSP Performance</h1><p class="sub" id="anspSub"></p></div>
+          <div class="filters internal" style="background:none;padding:0">
+            <select class="fi" id="anspSel" aria-label="เลือก ANSP" style="background:#fff"></select>
+            <button type="button" class="btn-q" id="presentBtn" onclick="setPresent(true)">โหมดนำเสนอ</button>
+          </div>
+        </div>
+        <div id="anspBody"></div>
+      </div>
+
+      <!-- ═══ AI PRODUCTS ═══ -->
+      <div class="view" id="view-ai" hidden>
+        <div class="pagehead"><h1>AI Products</h1><span class="tagline">NOTAM · AIP SUP · AIP AMDT ของทุกเรื่อง</span></div>
+        <section aria-labelledby="h-aiatt">
+          <h2 class="h2s" id="h-aiatt">สถานะตอนนี้ <span>กดเพื่อกรองรายการ กดซ้ำเพื่อยกเลิก</span></h2>
+          <div class="tiles" id="aiAttention"></div>
+        </section>
+        <section class="card" aria-labelledby="h-aitype">
+          <h2 id="h-aitype">สถานะตามประเภท</h2>
+          <p class="sub">ยังไม่เสร็จ เทียบกับเสร็จแล้ว (Published / Effective ขึ้นไป)</p>
+          <div class="olarows" id="aiType"></div>
+          <div class="legend"><span><i class="sw" style="background:var(--blue)"></i>ยังไม่เสร็จ</span><span><i class="sw" style="background:var(--green)"></i>เสร็จแล้ว</span></div>
+        </section>
+        <section class="card" aria-labelledby="h-ailist">
+          <div class="lhead">
+            <div><h2 id="h-ailist">รายการ AI Products</h2><div id="aiActiveFilter"></div></div>
+            <div class="filters">
+              <input class="fi" id="aiSearch" type="search" placeholder="ค้นหา CHG ID หรือเลขที่" aria-label="ค้นหา AI Products">
+              <select class="fi" id="aiTypeFilter" aria-label="ประเภท"><option value="">ทุกประเภท</option><option>NOTAM</option><option>AIP SUP</option><option>AIP AMDT</option></select>
+              <select class="fi" id="aiStatusFilter" aria-label="สถานะ"></select>
+            </div>
+          </div>
+          <div class="tbl"><table>
+            <thead><tr><th>CHG ID</th><th>ประเภท</th><th>เลขที่ / AIRAC</th><th>Status</th><th>Latest to AIS</th><th>Publication</th><th>Effective</th><th class="r">เหลือเวลาส่ง AIS</th></tr></thead>
+            <tbody id="aiTable"></tbody></table></div>
+          <p class="fine hint">กดที่แถวเพื่อเปิดเรื่องใน MoCS ONE</p>
+        </section>
+      </div>
+
+      <footer class="foot"><span>ข้อมูลจาก MoCS ONE · อ่านอย่างเดียว</span><span>พบปัญหาหรือข้อสงสัย ติดต่อ บุ๋น (NA) หรือ CE-5 DEV Team</span></footer>
+    </div>
+    <div id="errBox" class="err" hidden></div>
+  </main>
+</div>
+
+<script>
+// ═══ CONFIG ═══════════════════════════════════════════
+const CFG = {
+  clientId:    "53a3adc6-5aec-4400-8ae4-1c20e4cf1db4",
+  tenantId:    "af3a83b6-13aa-4300-a5ae-b19c8c423a5a",
+  siteUrl:     "https://caathai.sharepoint.com/sites/ANS",   // ← ตรวจว่า list อยู่ site นี้ หรือ ANSMoCSHub
+  redirectUri: "https://caat-ans.github.io/mocs-dashboard/",
+  oneUrl:      "https://apps.powerapps.com/play/e/default-af3a83b6-13aa-4300-a5ae-b19c8c423a5a/a/c091e46b-8a9c-4cdf-bd13-7981f8ad820c?tenantId=af3a83b6-13aa-4300-a5ae-b19c8c423a5a&CHGID=",
+  lists: { cases:"ANS-CHG", tracking:"ANS-CHG-Tracking", records:"ANS-CHG-Record", ai:"ANS-CHG-AIProducts", holidays:"ANS-Holidays" },
+  sla: { notify:5, ola:5 },             // แจ้งเพื่อทราบ (GM 1.2) · ความเห็นกองที่เกี่ยวข้อง (OPM 6.7, D-75) วันทำการ · ขอความเห็นชอบไม่มีกรอบรวม (ตามกระบวนงานที่เกี่ยวข้อง, D-71)
+  olaType: "ความเห็นกองที่เกี่ยวข้อง",
+  lead:{ approval:60, advance:7 },      // ต้องแจ้งล่วงหน้า (วันทำการ) · ยกเลิกการให้บริการ = 1 ปี
+  reviewDays:15, implDays:14, aisDays:14, reviseLong:30, upcomingDays:60,
+  // วันหยุด: อ่านจาก List ANS-Holidays (ผู้ดูแลเพิ่มทุกปีตามประกาศ กพท.) · ชุดนี้ใช้สำรองเมื่ออ่าน List ไม่ได้ และในโหมดตัวอย่าง
+  holidays: [
+    "2026-01-01","2026-01-02","2026-03-03","2026-04-06","2026-04-13","2026-04-14","2026-04-15","2026-05-01","2026-05-04",
+    "2026-05-13","2026-06-01","2026-06-03","2026-07-28","2026-07-29","2026-07-30","2026-08-12","2026-10-13","2026-10-16",
+    "2026-10-23","2026-12-07","2026-12-10","2026-12-31",
+    // 2570 — ประกาศ กพท. เรื่องวันหยุดตามประเพณีของสำนักงาน ประจำปี พ.ศ. 2570 (ลว. 9 พ.ย. 69) · ยังไม่รวมวันพืชมงคล (รอสำนักพระราชวังกำหนด)
+    "2027-01-01","2027-02-22","2027-04-06","2027-04-13","2027-04-14","2027-04-15","2027-05-03","2027-05-04","2027-05-20",
+    "2027-06-03","2027-07-19","2027-07-20","2027-07-28","2027-08-12","2027-10-13","2027-10-25","2027-12-06","2027-12-10","2027-12-31"
+  ]
+};
+const DEMO = /[?&]demo=1/.test(location.search) || !/github\.io$/.test(location.hostname);
+
+// ═══ VOCAB (ตรงกับ MoCS ONE) ═════════════════════════
+const PHASES=[{n:1,key:"Phase 1",name:"Change Notification",th:"รับแจ้ง"},{n:2,key:"Phase 2",name:"Evaluation",th:"ประเมิน"},{n:3,key:"Phase 3",name:"Implementation",th:"ดำเนินการ"},
+  {n:4,key:"Phase 4",name:"Verification",th:"ตรวจสอบ"},{n:5,key:"Phase 5",name:"Post-Implementation",th:"ติดตามผล"},{n:6,key:"Closed",name:"Closed",th:"ปิดเรื่องแล้ว"}];
+const STATUSES=["Submitted","Under Review","Oversight","Revise","Approved","In Progress","Post-Implementation","Closed","Acknowledged","Rejected"];
+const SC={"Submitted":"#1F618D","Under Review":"#9A7D0A","Oversight":"#CB4335","Revise":"#EA580C","Approved":"#1A5276",
+  "Acknowledged":"#148F77","Rejected":"#922B21","In Progress":"#1D6A5A","Post-Implementation":"#6C3483","Closed":"#566573"};
+const NOTIFY_TYPES=["แจ้งล่วงหน้า","เหตุสุดวิสัย"];        // กลุ่ม ข
+const CANCEL_TYPE="ยกเลิกการให้บริการ";
+const AI_STATUSES=["Pending","Active","Submitted","Published","Effective","Expired","Superseded","Cancelled"];
+const AI_DONE=["Published","Effective","Expired","Superseded","Supersede","Cancelled"];
+const AI_TYPE_C={"NOTAM":"#B93A2E","AIP SUP":"#6E4BA3","AIP AMDT":"#226494"};
+
+// ═══ AUTH ══════════════════════════════════════════════
+let msal2=null; const loginReq={scopes:["https://caathai.sharepoint.com/.default"]};
+if(!DEMO&&window.msal){ msal2=new msal.PublicClientApplication({auth:{clientId:CFG.clientId,authority:`https://login.microsoftonline.com/${CFG.tenantId}`,redirectUri:CFG.redirectUri},cache:{cacheLocation:"sessionStorage",storeAuthStateInCookie:false}}); }
+async function login(){try{await msal2.loginRedirect(loginReq);}catch(e){showErr(e.message);}}
+function logout(){ if(msal2) msal2.logoutRedirect(); }
+async function getToken(){const acc=msal2.getAllAccounts()[0]; if(!acc) throw new Error("ไม่พบบัญชีที่เข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
+  return (await msal2.acquireTokenSilent({...loginReq,account:acc})).accessToken;}
+
+// ═══ HELPERS ═══════════════════════════════════════════
+const fv=(o,...k)=>{for(const key of k){const v=o?.[key];if(v!=null&&v!=="")return v;}return "";};
+const cv=v=>(v&&typeof v==="object")?(v.Value??""):(v??"");
+const multi=v=>{ if(!v) return []; if(Array.isArray(v)) return v.map(cv).filter(Boolean);
+  if(Array.isArray(v.results)) return v.results.map(cv).filter(Boolean);
+  if(typeof v==="string") return v.split(";#").map(s=>s.trim()).filter(s=>s&&!/^\d+$/.test(s)); return []; };
+const toDate=v=>{ if(!v) return null; const d=new Date(v); if(isNaN(d)) return null; d.setHours(0,0,0,0); return d; };
+const dayMs=864e5;
+const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d;};
+const daysBetween=(a,b)=>Math.round((b-a)/dayMs);
+const fmt=d=>d?d.toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"2-digit"}):"—";
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+let HOL=new Set(CFG.holidays);
+const isWork=d=>{const w=d.getDay();return w!==0&&w!==6&&!HOL.has(iso(d));};
+// วันทำการหลังวัน a จนถึงวัน b (ไม่นับวัน a)
+function wd(a,b){ if(!a||!b||b<=a) return 0; let n=0; const d=new Date(a); while(true){ d.setDate(d.getDate()+1); if(d>b) break; if(isWork(d)) n++; } return n; }
+const median=arr=>{ if(!arr.length) return null; const s=[...arr].sort((x,y)=>x-y), m=s.length>>1; return s.length%2?s[m]:Math.round((s[m-1]+s[m])/2); };
+const pct=(a,b)=>b?Math.round(100*a/b):null;
+const openOne=id=>window.open(CFG.oneUrl+encodeURIComponent(id),"_blank","noopener");
+
+// field readers (ชื่อภายในหลายแบบ)
+const getId=i=>i.Title||"";
+const getStatus=i=>cv(fv(i,"CHGStatus","CHG_x0020_Status"));
+const phaseN=i=>{const p=cv(fv(i,"Phase")); if(/closed/i.test(p)) return 6; const m=/Phase\s*(\d)/i.exec(p); return m?+m[1]:0;};
+const isOpen=i=>phaseN(i)!==6;
+const getTeam=i=>cv(fv(i,"Team"));
+const getBrief=i=>fv(i,"CHGinbrief","CHG_x0020_in_x0020_brief");
+const getANSP=i=>cv(fv(i,"ANSP"));
+const getLocation=i=>cv(fv(i,"Location"));
+const getServices=i=>multi(fv(i,"AffectedServices","Affected_x0020_Services"));
+const getTypes=i=>multi(fv(i,"Regulations","Request_x0020_Type","RequestType"));
+const kindOf=i=>{const t=getTypes(i); if(!t.length) return "unknown"; return t.some(x=>!NOTIFY_TYPES.includes(x))?"approval":"notify";};
+const getStart=i=>toDate(fv(i,"StartDate","Start_x0020_Date"))||toDate(i.Created);
+const getImpl=i=>toDate(fv(i,"ImplementChangeDate","Implement_x0020_Change_x0020_Date"));
+const getModified=i=>toDate(i.Modified);
+
+const tTitle=t=>t.Title||"";
+const tStatus=t=>cv(fv(t,"Status"));
+const tType=t=>cv(fv(t,"TrackingType","Tracking_x0020_Type"));
+const tDue=t=>toDate(fv(t,"Follow_x002d_upDate","FollowupDate","Follow_x002d_up_x0020_Date","Follow_x0020_up_x0020_Date"));
+const tDone=t=>toDate(fv(t,"CompletedDate","Completed_x0020_Date"));
+const tCreated=t=>toDate(t.Created);
+const isDocReq=t=>/ขอเอกสาร/.test(tType(t));
+const tAction=t=>fv(t,"Follow_x002d_upAction","FollowupAction","Follow_x002d_up_x0020_Action","Follow_x0020_up_x0020_Action","Action");
+const tNote=t=>fv(t,"Note","Notes");
+const isOla=t=>tType(t)===CFG.olaType||/^ความเห็นของกอง/.test(tAction(t));
+const olaTeam=t=>(/ความเห็นของกอง\s*(\S+)/.exec(tAction(t))||[])[1]||"ไม่ระบุ";
+const olaClosedByDecision=t=>/ปิดเมื่อแจ้งผล|ปิดพร้อม Case/.test(tNote(t));
+
+const rTitle=r=>r.Title||"";
+const rType=r=>cv(fv(r,"EntryType","Entry_x0020_Type"));
+const rDate=r=>toDate(fv(r,"EntryDate","Entry_x0020_Date"))||toDate(r.Created);
+
+const aId=a=>fv(a,"Title","CHG_x0020_ID","CHGID");
+const aType=a=>cv(fv(a,"ProductType","Product_x0020_Type"));
+const aStatus=a=>cv(fv(a,"Status"));
+const aRef=a=>fv(a,"ReferenceNo_x002e_","Reference_x0020_No_x002e_","ReferenceNo");
+const aCycle=a=>fv(a,"AMDTCycle","AMDT_x0020_Cycle");
+const aLatest=a=>toDate(fv(a,"LatesttoAISDate","Latest_x0020_to_x0020_AIS_x0020_Date"));
+const aPub=a=>toDate(fv(a,"PublicationDate","Publication_x0020_Date"));
+const aEff=a=>toDate(fv(a,"EffectiveDate","Effective_x0020_Date"));
+const aDone=a=>AI_DONE.includes(aStatus(a));
+
+// ═══ STATE ═════════════════════════════════════════════
+let allCases=[],allTracking=[],allRecords=[],allAI=[];
+let byCase={};           // id -> {tracking:[], records:[], ai:[]}
+let calc={};             // id -> derived metrics
+let team="",focus=null,aiFocus=null,year=new Date().getFullYear(),qtr=0,ansp="";
+const charts={};
+
+// ═══ DATA ═════════════════════════════════════════════
+async function fetchList(name){
+  const token=await getToken();
+  let url=`${CFG.siteUrl}/_api/web/lists/getbytitle('${name}')/items?$top=5000`,out=[];
+  while(url){ const r=await fetch(url,{headers:{Authorization:"Bearer "+token,Accept:"application/json;odata=verbose"}});
+    if(!r.ok) throw new Error(`อ่าน list "${name}" ไม่ได้ (HTTP ${r.status})`);
+    const j=await r.json(); out=out.concat(j.d.results); url=j.d.__next||null; }
+  return out;
+}
+
+// คำนวณค่าต่อเรื่อง (SLA, แจ้งล่วงหน้า, เอกสารครบ, ผลการพิจารณา, งานค้าง)
+function derive(){
+  byCase={}; const t0=today();
+  const B=id=>byCase[id]||(byCase[id]={tracking:[],records:[],ai:[]});
+  allTracking.forEach(t=>B(tTitle(t)).tracking.push(t));
+  allRecords.forEach(r=>B(rTitle(r)).records.push(r));
+  allAI.forEach(a=>B(aId(a)).ai.push(a));
+  calc={};
+  allCases.forEach(i=>{
+    const id=getId(i), b=B(id), kind=kindOf(i), start=getStart(i);
+    const pend=b.tracking.filter(t=>tStatus(t)==="Pending");
+    const aiPend=b.ai.filter(a=>aStatus(a)==="Pending"&&aType(a)!=="NOTAM");
+    const decs=b.records.filter(r=>rType(r)==="ผลการพิจารณา"&&rDate(r)).sort((x,y)=>rDate(x)-rDate(y));
+    const docReq=b.tracking.filter(isDocReq);
+    const c={kind,start,
+      pending:pend.length, overdue:pend.filter(t=>tDue(t)&&tDue(t)<t0).length,
+      next:pend.map(tDue).filter(Boolean).sort((x,y)=>x-y)[0]||null,
+      aiPending:aiPend.length, aiOverdue:aiPend.filter(a=>aLatest(a)&&aLatest(a)<t0).length,
+      docReq:docReq.length, waitingApplicant:docReq.some(t=>tStatus(t)==="Pending")};
+    // ความเห็นกองที่เกี่ยวข้อง (OLA 5 วันทำการ)
+    const olaP=pend.filter(isOla);
+    c.olaPend=olaP.length; c.olaOver=olaP.filter(t=>tDue(t)&&tDue(t)<t0).length;
+    c.olaTeams=olaP.map(olaTeam); c.olaOverTeams=olaP.filter(t=>tDue(t)&&tDue(t)<t0).map(olaTeam);
+    // ผลการพิจารณา
+    const s=getStatus(i), p=phaseN(i);
+    c.outcome = s==="Rejected"?"ไม่เห็นชอบ": s==="Acknowledged"?"รับทราบ": (p>=3&&p<=5)||(p===6&&s==="Closed")?"เห็นชอบ":null;
+    c.decDate = decs[0]?rDate(decs[0]):(c.outcome?getModified(i):null);
+    // นาฬิกา Gate 1 / แจ้งเพื่อทราบ
+    if(kind==="approval"||kind==="notify"){
+      const end=decs[0]?rDate(decs[0]):null;
+      let clockStart=start;
+      if(kind==="approval") docReq.forEach(t=>{const d=tDone(t); if(d&&(!end||d<=end)&&d>clockStart) clockStart=d;});
+      c.clockStart=clockStart; c.clockEnd=end;
+      c.running=!end && isOpen(i) && p<=2;
+      c.paused=c.running && c.waitingApplicant;
+      c.days=end?wd(clockStart,end):(c.running&&!c.paused?wd(clockStart,t0):null);
+      c.limit=kind==="notify"?CFG.sla.notify:null;
+    }
+    // แจ้งล่วงหน้า (ใช้ Implement Change Date)
+    const impl=getImpl(i), types=getTypes(i);
+    if(start&&impl&&!types.includes("เหตุสุดวิสัย")){
+      if(types.includes(CANCEL_TYPE)){ c.leadNeed="1 ปี"; c.leadOk=daysBetween(start,impl)>=365; }
+      else if(kind==="approval"){ c.leadNeed=`${CFG.lead.approval} วันทำการ`; c.leadDays=wd(start,impl); c.leadOk=c.leadDays>=CFG.lead.approval; }
+      else if(types.includes("แจ้งล่วงหน้า")){ c.leadNeed=`${CFG.lead.advance} วันทำการ`; c.leadDays=wd(start,impl); c.leadOk=c.leadDays>=CFG.lead.advance; }
+    }
+    // เอกสารครบตั้งแต่ยื่นครั้งแรก — นับเมื่อผ่านการตรวจเอกสารแล้ว (มีผลการพิจารณา หรือพ้น Phase 2)
+    if(kind==="approval"&&(decs.length||p>=3)) c.firstTimeRight=docReq.length===0;
+    calc[id]=c;
+  });
+}
+
+// ═══ PERIOD ════════════════════════════════════════════
+function periodRange(){ const y=year; if(!qtr) return [new Date(y,0,1),new Date(y,11,31)];
+  return [new Date(y,(qtr-1)*3,1),new Date(y,qtr*3,0)]; }
+const inPeriod=d=>{ if(!d) return false; const [a,b]=periodRange(); return d>=a&&d<=b; };
+const periodLabel=()=>qtr?`ไตรมาส ${qtr}/${year+543}`:`ปี ${year+543}`;
+function renderPeriodCtl(){
+  const years=[...new Set(allCases.map(getStart).filter(Boolean).map(d=>d.getFullYear()).concat([new Date().getFullYear()]))].sort((a,b)=>a-b);
+  if(!years.includes(year)) year=years[years.length-1];
+  const box=document.getElementById("periodCtl");
+  const yHtml=years.length<=3
+    ?`<span class="seg" role="group" aria-label="ปี">${years.map(y=>`<button type="button" data-y="${y}" aria-pressed="${y===year}">${y+543}</button>`).join("")}</span>`
+    :`<select class="ysel" id="yearSel" aria-label="ปี">${[...years].reverse().map(y=>`<option value="${y}" ${y===year?"selected":""}>ปี ${y+543}</option>`).join("")}</select>`;
+  box.innerHTML=yHtml+`<span class="sep" aria-hidden="true"></span>`+[0,1,2,3,4].map(q=>`<button type="button" class="pill" data-q="${q}" aria-pressed="${qtr===q}">${q?"Q"+q:"ทั้งปี"}</button>`).join("");
+  box.querySelectorAll("[data-y]").forEach(b=>b.onclick=()=>{year=+b.dataset.y;renderPeriodCtl();renderAllPeriod();});
+  const ys=document.getElementById("yearSel"); if(ys) ys.onchange=()=>{year=+ys.value;renderAllPeriod();};
+  box.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{qtr=+b.dataset.q;renderPeriodCtl();renderAllPeriod();});
+}
+// ต้นปี: ถ้าปีปัจจุบันยังไม่มีเรื่องที่แจ้งผล ให้เปิดปีก่อนหน้า (ครั้งแรกที่โหลดเท่านั้น)
+let yearPicked=false;
+function pickDefaultYear(){
+  if(yearPicked) return; yearPicked=true;
+  const cy=new Date().getFullYear();
+  const hasCur=allCases.some(i=>{const d=calc[getId(i)].decDate;return d&&d.getFullYear()===cy;});
+  const hasPrev=allCases.some(i=>{const s=getStart(i);return s&&s.getFullYear()===cy-1;});
+  year=(!hasCur&&hasPrev)?cy-1:cy;
+}
+function renderAllPeriod(){ renderExec(); renderANSP(); }
+// เตือนเมื่อปีที่เลือกหรือปีปัจจุบันยังไม่มีวันหยุดในรายการ (นับวันทำการจะคลาดเคลื่อน)
+function checkHolidays(){ const el=document.getElementById("holNote"); const ys=[...new Set([year,new Date().getFullYear()])];
+  const miss=ys.filter(y=>![...HOL].some(s=>s.startsWith(y+"-")));
+  el.hidden=!miss.length; if(miss.length) el.textContent=`ยังไม่มีวันหยุดของปี ${miss.map(y=>y+543).join(", ")} ในรายการ ANS-Holidays ระยะเวลาที่นับเป็นวันทำการอาจคลาดเคลื่อน · แจ้งผู้ดูแลระบบให้เพิ่มวันหยุดตามประกาศ กพท.`; }
+
+// ═══ EXECUTIVE SUMMARY ═════════════════════════════════
+const TH_M=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+function spark(vals,colorAt,labels){
+  const m=Math.max(1,...vals);
+  return vals.map((v,k)=>`<i style="height:${v?Math.max(10,Math.round(100*v/m)):6}%;background:${v?colorAt(k):"var(--line-s)"}" title="${esc(labels[k])}: ${v}"></i>`).join("");
+}
+function kpiCard(label,val,unit,color,bars,note){
+  return `<div class="kpi"><span class="kpi-l">${label}</span><span class="kpi-v" style="color:${color}">${val}<small>${unit}</small></span><span class="spark" aria-hidden="true">${bars}</span><span class="kpi-n">${note}</span></div>`;
+}
+const vrOf=i=>!!i.OversightRequired0;
+
+function renderExec(){ checkHolidays();
+  const t0=today();
+  document.getElementById("execTitle").textContent=`${periodLabel()} เป็นอย่างไรบ้าง`;
+  const open=allCases.filter(isOpen);
+  const newIn=allCases.filter(i=>inPeriod(getStart(i)));
+  const closedDate=i=>calc[getId(i)].decDate||getModified(i);
+  const closedIn=allCases.filter(i=>!isOpen(i)&&inPeriod(closedDate(i)));
+  const inQ=m=>!qtr||Math.floor(m/3)+1===qtr;
+  const monthly=(arr,fn)=>TH_M.map((_,m)=>arr.filter(i=>{const d=fn(i);return d&&d.getFullYear()===year&&d.getMonth()===m;}).length);
+
+  // ── KPI cards
+  const byPhase=[1,2,3,4,5].map(n=>open.filter(i=>phaseN(i)===n).length);
+  const ovTrk=open.filter(i=>{const c=calc[getId(i)];return c.overdue-c.olaOver>0;}).length;
+  const ovOla=open.filter(i=>calc[getId(i)].olaOver>0).length;
+  const ovAis=open.filter(i=>calc[getId(i)].aiOverdue>0).length;
+  const ovAny=open.filter(i=>{const c=calc[getId(i)];return c.overdue+c.aiOverdue>0;}).length;
+  const mLab=TH_M.map(m=>`${m} ${String(year+543).slice(2)}`);
+  document.getElementById("kpis").innerHTML=[
+    kpiCard("เรื่องที่ยังเปิดอยู่",open.length,"เรื่อง","var(--ink)",spark(byPhase,()=>"var(--blue-l)",["Phase 1","Phase 2","Phase 3","Phase 4","Phase 5"]),"ณ วันนี้ · แท่ง = Phase 1–5"),
+    kpiCard("เรื่องเข้าใหม่",newIn.length,"เรื่อง","var(--blue)",spark(monthly(allCases,getStart),k=>inQ(k)?"var(--blue)":"var(--blue-l)",mLab),`ตาม Start Date · รายเดือน ปี ${year+543}`),
+    kpiCard("ปิดเรื่องแล้ว",closedIn.length,"เรื่อง","var(--green-ink)",spark(monthly(allCases.filter(i=>!isOpen(i)),closedDate),k=>inQ(k)?"var(--green)":"var(--green-l)",mLab),`รายเดือน ปี ${year+543}`),
+    kpiCard("มีงานเลยกำหนด",ovAny,"เรื่อง",ovAny?"var(--red)":"var(--ink-3)",spark([ovTrk,ovOla,ovAis],()=>"var(--red)",["Tracking","ความเห็นกอง","ส่ง AIS"]),`Tracking ${ovTrk} · ความเห็นกอง ${ovOla} · ส่ง AIS ${ovAis}`)
+  ].join("");
+
+  // ── ระยะเวลาพิจารณาคำขอความเห็นชอบ
+  const g1=allCases.filter(i=>calc[getId(i)].kind==="approval"&&calc[getId(i)].clockEnd&&inPeriod(calc[getId(i)].clockEnd));
+  const done=g1.map(i=>({id:getId(i),d:calc[getId(i)].days}));
+  const running=allCases.filter(i=>{const c=calc[getId(i)];return c.kind==="approval"&&c.running&&!c.paused;}).map(i=>({id:getId(i),d:calc[getId(i)].days||0}));
+  const typ=median(done.map(x=>x.d));
+  const mn=done.length?Math.min(...done.map(x=>x.d)):"—", mx=done.length?Math.max(...done.map(x=>x.d)):"—";
+  document.getElementById("durTop").innerHTML=
+    `<div><span class="big">${typ??"—"}</span>${typ!=null?'<span class="big-u">วันทำการ</span>':""}
+      <div class="sub">${done.length?`ครึ่งหนึ่งของ ${done.length} เรื่องที่แจ้งผลใน${periodLabel()} เสร็จภายในเวลานี้`:`ยังไม่มีเรื่องขอความเห็นชอบที่แจ้งผลใน${periodLabel()}`}</div></div>
+     <div class="trio"><div><b>${mn}</b><span>เร็วสุด</span></div><div><b>${mx}</b><span>นานสุด</span></div><div><b style="color:var(--amber-ink)">${running.length}</b><span>ยังพิจารณาอยู่</span></div></div>`;
+  const BK=[[0,9,"0–9"],[10,19,"10–19"],[20,29,"20–29"],[30,39,"30–39"],[40,49,"40–49"],[50,59,"50–59"],[60,1e9,"60+"]];
+  const hb=BK.map(([a,b,l])=>({l,dn:done.filter(x=>x.d>=a&&x.d<=b),rn:running.filter(x=>x.d>=a&&x.d<=b)}));
+  const hm=Math.max(1,...hb.map(h=>h.dn.length+h.rn.length)), H=124;
+  const hist=document.getElementById("hist");
+  hist.innerHTML=hb.map(h=>{const t=h.dn.length+h.rn.length;
+    const tip=[...h.dn.map(x=>`${x.id} (${x.d})`),...h.rn.map(x=>`${x.id} (${x.d}, ยังพิจารณา)`)].join(", ");
+    return `<div class="hcol" title="${esc(tip)}"><b>${t||""}</b>${h.rn.length?`<i class="run" style="height:${Math.round(H*h.rn.length/hm)}px"></i>`:""}${h.dn.length?`<i class="done" style="height:${Math.round(H*h.dn.length/hm)}px"></i>`:""}</div>`;}).join("");
+  hist.setAttribute("aria-label","จำนวนเรื่องตามระยะเวลาพิจารณา (วันทำการ): "+hb.map(h=>`${h.l} แจ้งผลแล้ว ${h.dn.length} ยังพิจารณา ${h.rn.length}`).join(" · "));
+  document.getElementById("hlab").innerHTML=hb.map(h=>`<span>${h.l}</span>`).join("");
+
+  // ── แจ้งเพื่อทราบ
+  const n1=allCases.filter(i=>{const c=calc[getId(i)];return c.kind==="notify"&&c.clockEnd&&inPeriod(c.clockEnd);});
+  const nOk=n1.filter(i=>calc[getId(i)].days<=CFG.sla.notify).length, np=pct(nOk,n1.length), C=2*Math.PI*54;
+  document.getElementById("ntfSub").textContent=`กำหนดรับทราบภายใน ${CFG.sla.notify} วันทำการ · ${periodLabel()}`;
+  document.getElementById("notify").innerHTML=`<div class="donut-row">
+    <svg width="120" height="120" viewBox="0 0 132 132" role="img" aria-label="${n1.length?`รับทราบทันกำหนด ${nOk} จาก ${n1.length} เรื่อง`:"ยังไม่มีข้อมูล"}"><circle cx="66" cy="66" r="54" fill="none" stroke="#E4EAF0" stroke-width="16"/>${np?`<circle cx="66" cy="66" r="54" fill="none" stroke="#8DC73F" stroke-width="16" stroke-dasharray="${(C*np/100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 66 66)"/>`:""}<text x="66" y="74" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="30" font-weight="700" fill="#13283B">${np==null?"—":np+"%"}</text></svg>
+    <div>${n1.length?`<div class="frac">${nOk}<span> / ${n1.length}</span></div><div class="sub">เรื่องที่รับทราบทันกำหนด</div>${n1.length-nOk?`<div class="bad" style="font-size:13px;margin-top:8px">${n1.length-nOk} เรื่องเกิน ${CFG.sla.notify} วันทำการ</div>`:`<div class="ok" style="font-size:13px;margin-top:8px;font-weight:600">ทันกำหนดทุกเรื่อง</div>`}`
+      :`<div class="sub">ยังไม่มีเรื่องที่รับทราบใน${periodLabel()}</div>`}</div></div>`;
+
+  // ── ผลการพิจารณา
+  const out={}; allCases.filter(i=>inPeriod(calc[getId(i)].decDate)&&calc[getId(i)].outcome).forEach(i=>{const o=calc[getId(i)].outcome;out[o]=(out[o]||0)+1;});
+  const OK=[["เห็นชอบ","คำขอความเห็นชอบ","#8DC73F"],["รับทราบ","แจ้งเพื่อทราบ","#7CC3F0"],["ไม่เห็นชอบ","คำขอความเห็นชอบ","#FF9C88"]];
+  const tot=OK.reduce((a,[k])=>a+(out[k]||0),0);
+  document.getElementById("h-out").textContent=`ผลการพิจารณา${periodLabel()}`;
+  document.getElementById("outTotal").textContent=tot;
+  document.getElementById("outcome").innerHTML=`<div class="obar" role="img" aria-label="${OK.map(([k])=>`${k} ${out[k]||0}`).join(" ")}">${OK.filter(([k])=>out[k]).map(([k,,c])=>`<span style="width:${100*out[k]/tot}%;background:${c}"></span>`).join("")}</div>
+    <div class="ogrid">${OK.map(([k,f,c])=>`<div><b style="color:${c}">${out[k]||0}</b><div class="ol">${k}</div><div class="of">${f}</div></div>`).join("")}</div>`;
+
+  // ── ความเห็นกองที่เกี่ยวข้อง
+  renderOla();
+
+  // ── เรื่องที่ควรรู้
+  const ex=[];
+  open.forEach(i=>{const id=getId(i),c=calc[id],b=byCase[id]||{tracking:[],ai:[]};
+    if(c.olaOver){const od=Math.max(0,...b.tracking.filter(t=>isOla(t)&&tStatus(t)==="Pending"&&tDue(t)&&tDue(t)<t0).map(t=>wd(tDue(t),t0)));
+      ex.push({i,sev:6+c.olaOver,tag:"เลยกำหนด",cls:"red",why:`กอง ${[...new Set(c.olaOverTeams)].join(", ")} ยังไม่ส่งความเห็น · เลยมา ${od} วันทำการ`});}
+    if(c.aiOverdue){const od=Math.max(0,...b.ai.filter(a=>aStatus(a)==="Pending"&&aLatest(a)&&aLatest(a)<t0).map(a=>daysBetween(aLatest(a),t0)));
+      ex.push({i,sev:5,tag:"เลยกำหนด",cls:"red",why:`AIP SUP / AMDT ยังไม่ส่ง AIS · เลย Latest to AIS ${od} วัน`});}
+    if(getStatus(i)==="Revise"){const m=getModified(i),d=m?daysBetween(m,t0):0; if(d>CFG.reviseLong) ex.push({i,sev:d/10,tag:"รอผู้ขอ",cls:"amb",why:`รอผู้ขอแก้ไขเอกสารมา ${d} วัน`});}
+  });
+  ex.sort((a,b)=>b.sev-a.sev);
+  document.getElementById("exceptions").innerHTML=ex.length?ex.slice(0,5).map(x=>`<button type="button" class="ex" data-open="${esc(getId(x.i))}"><span class="tag ${x.cls}">${x.tag}</span>
+      <span><span class="cid">${esc(getId(x.i))}</span>${esc(getBrief(x.i))}<span class="why">${esc(x.why)} · ${esc(getANSP(x.i))} · ทีม ${esc(getTeam(x.i))}</span></span></button>`).join("")
+    +(ex.length>5?`<p class="none">และอีก ${ex.length-5} เรื่อง · ดูในแท็บงานที่ต้องติดตาม</p>`:"")
+    :`<p class="none">ไม่มีเรื่องที่ต้องติดตามเป็นพิเศษ</p>`;
+
+  // ── จะเริ่มดำเนินการ
+  const soon=new Date(t0.getTime()+CFG.upcomingDays*dayMs);
+  const up=open.filter(i=>{const d=getImpl(i);return d&&d>=t0&&d<=soon;}).sort((a,b)=>getImpl(a)-getImpl(b));
+  document.getElementById("upcoming").innerHTML=up.slice(0,6).map(i=>{const d=getImpl(i),n=daysBetween(t0,d);
+    return `<li><span class="dot ${vrOf(i)?"vr":""}" aria-hidden="true"></span>
+      <div class="tl-h"><span class="d">${fmt(d)}</span><span class="in">${n===0?"วันนี้":`อีก ${n} วัน`}</span>${vrOf(i)?'<span class="sr">ต้องตรวจก่อนเปิดให้บริการ</span>':""}</div>
+      <div><button type="button" class="lnk" data-open="${esc(getId(i))}">${esc(getId(i))}</button>${esc(getBrief(i))} <span class="mut" style="font-size:13px">· ${esc([getANSP(i),getLocation(i)].filter(Boolean).join(" · "))}</span></div></li>`;}).join("");
+  document.getElementById("upMore").innerHTML=!up.length?`<p class="none">ไม่มีการเปลี่ยนแปลงที่จะเริ่มใน ${CFG.upcomingDays} วัน</p>`:up.length>6?`<p class="none">และอีก ${up.length-6} เรื่อง</p>`:"";
+}
+
+function renderOla(){
+  const rows=allTracking.filter(isOla), t0=today(), req=rows.filter(t=>inPeriod(tCreated(t)));
+  const stat=t=>{ if(tStatus(t)==="Pending") return "pend"; if(olaClosedByDecision(t)) return "closed";
+    const d=tDone(t), due=tDue(t); return (d&&due&&d>due)?"late":"ok"; };
+  const decided=req.filter(t=>stat(t)!=="pend"), ok=decided.filter(t=>stat(t)==="ok").length, p=pct(ok,decided.length);
+  const pendAll=rows.filter(t=>tStatus(t)==="Pending"), over=t=>tDue(t)&&tDue(t)<t0, overAll=pendAll.filter(over);
+  document.getElementById("olaStats").innerHTML=
+    `<div><span class="stat" style="color:${p==null?"var(--ink-3)":p>=80?"var(--green-ink)":"var(--red)"}">${p==null?"—":p+"%"}</span><div class="stat-c">${decided.length?`ตอบทันกำหนด (${ok} จาก ${decided.length})`:`ยังไม่มีรายการที่ปิดแล้วใน${periodLabel()}`}</div></div>
+     <div><span class="stat" style="color:${overAll.length?"var(--red)":"var(--ink)"}">${pendAll.length}</span><div class="stat-c">รออยู่ ณ วันนี้${overAll.length?` · เลยกำหนด ${overAll.length}`:""}</div></div>`;
+  const teams=[...new Set(rows.map(olaTeam))].sort().filter(tm=>decided.some(t=>olaTeam(t)===tm)||pendAll.some(t=>olaTeam(t)===tm));
+  const box=document.getElementById("olaRows");
+  if(!teams.length){box.innerHTML=`<p class="none">ยังไม่มีรายการความเห็นกองที่เกี่ยวข้องใน${periodLabel()}</p>`;return;}
+  box.innerHTML=teams.map(tm=>{const r=decided.filter(t=>olaTeam(t)===tm), n=k=>r.filter(t=>stat(t)===k).length;
+    const pa=pendAll.filter(t=>olaTeam(t)===tm), po=pa.filter(over).length, nx=pa.map(tDue).filter(Boolean).sort((a,b)=>a-b)[0];
+    const segs=[["s-ok",n("ok")],["s-late",n("late")],["s-cl",n("closed")],["s-pd"+(po?" over":""),pa.length]].filter(s=>s[1]), tt=segs.reduce((a,s)=>a+s[1],0);
+    const pt=pa.length?(po?`<span class="bad">รอ ${pa.length} · เลยกำหนด ${po}</span>`:`รอ ${pa.length}${nx?` · ครบ ${fmt(nx)}`:""}`):`<span class="mut">ไม่มีรายการรอ</span>`;
+    return `<div class="olar"><b>${esc(tm)}</b><span class="sbar" role="img" aria-label="กอง ${esc(tm)}: ทันกำหนด ${n("ok")} เกินกำหนด ${n("late")} แจ้งผลก่อนตอบ ${n("closed")} รออยู่ ${pa.length}">${segs.map(([c,v])=>`<span class="${c}" style="width:${100*v/tt}%">${v}</span>`).join("")}</span><span class="pt">${pt}</span></div>`;}).join("");
+}
+
+// ═══ TASKS SUMMARY ═════════════════════════════════════
+const teamCases=()=>team?allCases.filter(i=>getTeam(i)===team):allCases;
+function renderTeams(){
+  const teams=[...new Set(allCases.map(getTeam).filter(Boolean))].sort(), box=document.getElementById("teamChips");
+  box.innerHTML=[["","ทุกทีม"],...teams.map(t=>[t,t])].map(([v,l])=>`<button type="button" class="pill" aria-pressed="${team===v}" data-team="${esc(v)}">${esc(l)}</button>`).join("");
+  box.querySelectorAll(".pill").forEach(b=>b.onclick=()=>{team=b.dataset.team;focus=null;renderTeams();renderTasks();});
+}
+function groups(items){
+  const t0=today(), soon=new Date(t0.getTime()+CFG.implDays*dayMs), open=items.filter(isOpen);
+  return [
+    {key:"tracking",tone:"hot",title:"Tracking เลยกำหนด",desc:"เรื่องที่มีรายการ Pending เลย Follow-up Date",items:open.filter(i=>calc[getId(i)].overdue>0)},
+    {key:"ola",tone:open.some(i=>calc[getId(i)].olaOver>0)?"hot":"warm",title:"รอความเห็นกอง",desc:"กองที่เกี่ยวข้องยังไม่ตอบ · แดง = เลย 5 วันทำการ",items:open.filter(i=>calc[getId(i)].olaPend>0)},
+    {key:"ais",tone:"hot",title:"เลยกำหนดส่ง AIS",desc:"AIP SUP / AMDT ที่ยัง Pending เลย Latest to AIS",items:open.filter(i=>calc[getId(i)].aiOverdue>0)},
+    {key:"review",tone:"warm",title:`Under Review เกิน ${CFG.reviewDays} วัน`,desc:"ไม่มีการแก้ไขเรื่องตั้งแต่วันที่ระบุ",items:open.filter(i=>getStatus(i)==="Under Review"&&getModified(i)&&daysBetween(getModified(i),t0)>CFG.reviewDays)},
+    {key:"impl",tone:"warm",title:`ดำเนินการภายใน ${CFG.implDays} วัน`,desc:"Implement Change Date ที่ใกล้ถึง",items:open.filter(i=>{const d=getImpl(i);return d&&d>=t0&&d<=soon;})},
+    {key:"revise",tone:"",title:"รอผู้ขอแก้ไข",desc:"Status: Revise (ไม่นับเป็นเวลาของ กพท.)",items:open.filter(i=>getStatus(i)==="Revise")}
+  ];
+}
+function renderRoute(items){
+  document.getElementById("openTotal").textContent=items.filter(isOpen).length;
+  document.getElementById("waypoints").innerHTML=PHASES.map(p=>{
+    const n=items.filter(i=>phaseN(i)===p.n).length, f=items.filter(i=>phaseN(i)===p.n&&(calc[getId(i)].overdue+calc[getId(i)].aiOverdue)>0).length;
+    const sel=focus?.kind==="phase"&&focus.key===p.n, last=p.n===6;
+    const cls=[last?"closed":"",!n&&!last?"zero":"",f&&!last?"flag":""].join(" ");
+    return `<li><button type="button" class="wp ${cls}" aria-pressed="${sel}" data-phase="${p.n}" aria-label="${last?"Closed":p.key} ${p.th} ${n} เรื่อง${f&&!last?` มีงานเลยกำหนด ${f}`:""}">
+      <span class="wp-c">${n}</span><span class="wp-k">${last?"Closed":p.key}</span><span class="wp-s">${p.th}</span>
+      <span class="wp-f">${last?"&nbsp;":f?`เลยกำหนด ${f}`:"ไม่มีค้าง"}</span></button></li>`;}).join("");
+  document.querySelectorAll(".wp").forEach(b=>b.onclick=()=>{const n=+b.dataset.phase;focus=(focus?.kind==="phase"&&focus.key===n)?null:{kind:"phase",key:n};renderTasks();});
+}
+const TONE_TAG={hot:"ด่วน",warm:"ระวัง","":"ติดตาม"};
+function tileHtml(g,n,sel,attr){
+  return `<button type="button" class="tile ${n?g.tone:"zero"}" aria-pressed="${sel}" ${attr}><span class="tile-top"><span class="tile-n">${n}</span><span class="tile-tag">${TONE_TAG[g.tone]}</span></span><span class="tile-t">${g.title}</span><span class="tile-d">${g.desc}</span></button>`;
+}
+function renderAttention(items){
+  document.getElementById("attention").innerHTML=groups(items).map(g=>tileHtml(g,g.items.length,focus?.kind==="att"&&focus.key===g.key,`data-att="${g.key}"`)).join("");
+  document.querySelectorAll(".tile[data-att]").forEach(b=>b.onclick=()=>{const k=b.dataset.att;focus=(focus?.kind==="att"&&focus.key===k)?null:{kind:"att",key:k};renderTasks();});
+}
+function renderTable(){
+  const items=teamCases(), q=document.getElementById("searchInput").value.trim().toLowerCase();
+  const sf=document.getElementById("statusFilter").value, af=document.getElementById("anspFilter").value, scope=document.getElementById("scopeFilter").value;
+  let rows=items,label="";
+  if(focus?.kind==="phase"){const p=PHASES.find(x=>x.n===focus.key);rows=rows.filter(i=>phaseN(i)===focus.key);label=p.n===6?"Closed":`${p.key} · ${p.th}`;}
+  if(focus?.kind==="att"){const g=groups(items).find(x=>x.key===focus.key);rows=g.items;label=g.title;}
+  if(focus?.kind!=="phase"){ if(scope==="open") rows=rows.filter(isOpen); else if(scope==="closed") rows=rows.filter(i=>!isOpen(i)); }
+  rows=rows.filter(i=>(!q||getId(i).toLowerCase().includes(q)||getBrief(i).toLowerCase().includes(q))&&(!sf||getStatus(i)===sf)&&(!af||getANSP(i)===af));
+  const seq=i=>{const m=/(\d+)-[A-Z]+-(\d+)$/.exec(getId(i));return m?(+m[1])*10000+(+m[2]):0;}; rows.sort((a,b)=>seq(b)-seq(a));
+  document.getElementById("tableTitle").innerHTML=`รายการเรื่อง <span class="num mut">${rows.length}</span>`;
+  document.getElementById("activeFilter").innerHTML=label?`<span class="chipf">กรองตาม: ${esc(label)} <button type="button" aria-label="ล้างตัวกรอง" onclick="focus=null;renderTasks()">✕</button></span>`:"";
+  const box=document.getElementById("caseTable"), t0=today();
+  if(!rows.length){box.innerHTML=`<div class="empty">ไม่พบเรื่องตามเงื่อนไขนี้</div>`;return;}
+  box.innerHTML=rows.map(i=>{const id=getId(i),c=calc[id],s=getStatus(i),pn=phaseN(i),p=PHASES.find(x=>x.n===pn);
+    const work=[];
+    if(c.olaPend) work.push(`<span class="chip ${c.olaOver?"red":"amb"}">รอความเห็น ${esc([...new Set(c.olaTeams)].join(", "))}${c.olaOver?" · เลยกำหนด":""}</span>`);
+    const nO=c.pending-c.olaPend+c.aiPending, oO=c.overdue-c.olaOver+c.aiOverdue;
+    if(nO) work.push(`<span class="chip ${oO?"red":"grey"}">งานค้าง ${nO}${oO?` · เลยกำหนด ${oO}`:""}</span>`);
+    const workHtml=work.length?work.join("")+(c.next?`<span class="m">ใกล้สุด ${fmt(c.next)}</span>`:""):`<span class="m">ไม่มีงานค้าง</span>`;
+    const impl=getImpl(i), st=getStart(i), age=st&&isOpen(i)?daysBetween(st,t0):null, col=SC[s]||"#56697C";
+    const implSoon=impl&&isOpen(i)&&impl>=t0&&daysBetween(t0,impl)<=CFG.implDays;
+    const meta=[getANSP(i),getLocation(i),getServices(i).join(", ")].filter(Boolean).join(" · ");
+    return `<div class="cr" role="link" tabindex="0" data-open="${esc(id)}" aria-label="${esc(id)} ${esc(getBrief(i))} เปิดใน MoCS ONE">
+      <span><span class="cid">${esc(id)}</span><span class="m" style="display:inline">ทีม ${esc(getTeam(i))}</span><span class="t">${esc(getBrief(i))}</span><span class="m">${esc(meta)}</span></span>
+      <span><span class="pl">${p?(pn===6?"Closed":`${p.key} · ${p.th}`):"<span class='mut'>ไม่ระบุ Phase</span>"}</span><span class="chip" style="background:${col}1A;color:${col}">${esc(s||"—")}</span></span>
+      <span>${workHtml}</span>
+      <span class="rt"><span class="lab">วันดำเนินการ</span><span class="num ${implSoon?"warn":""}" style="font-weight:600;font-size:14px">${fmt(impl)}</span></span>
+      <span class="rt"><span class="lab">เปิดมาแล้ว</span>${age==null?'<span class="mut">—</span>':`<b class="num" style="font-size:18px;color:${age>90?"var(--red)":age>30?"var(--amber-ink)":"var(--ink)"}">${age}</b><span class="m" style="display:inline"> วัน</span>`}</span></div>`;}).join("");
+}
+function renderTasks(){const items=teamCases();renderRoute(items);renderAttention(items);renderTable();}
+
+// ═══ ANSP PERFORMANCE ══════════════════════════════════
+function anspList(){return [...new Set(allCases.map(getANSP).filter(Boolean))].sort();}
+function renderANSPSel(){
+  const s=document.getElementById("anspSel");
+  s.innerHTML='<option value="">ทุก ANSP (ภายใน)</option>'+anspList().map(a=>`<option ${a===ansp?"selected":""}>${esc(a)}</option>`).join("");
+  s.onchange=()=>{ansp=s.value;renderANSP();};
+}
+function metric(cases,fn){ // fn -> true/false/undefined
+  const vals=cases.map(fn).filter(v=>v===true||v===false); const ok=vals.filter(Boolean).length; return {ok,n:vals.length,p:pct(ok,vals.length)}; }
+function kpiRow(name,desc,m,qs){
+  const enough=m.n>=3;
+  return `<div class="krow"><div class="krow-name"><b>${name}</b><span>${desc}</span>${qs?`<div class="qtrs">${qs}</div>`:""}</div>
+    <div class="bar" aria-hidden="true"><i style="width:${enough?m.p:0}%"></i></div>
+    <div class="krow-val">${enough?`<b class="num">${m.p}%</b><span>${m.ok} จาก ${m.n} เรื่อง</span>`:`<b class="mut" style="font-size:15px">ข้อมูลยังไม่พอ</b><span>${m.n} เรื่อง (ต้องมีอย่างน้อย 3)</span>`}</div></div>`;
+}
+function renderANSP(){
+  document.getElementById("presentBtn").disabled=!ansp;
+  const pool=allCases.filter(i=>(!ansp||getANSP(i)===ansp));
+  const inP=pool.filter(i=>inPeriod(getStart(i)));
+  document.getElementById("anspTitle").textContent=ansp||"ANSP Performance";
+  document.getElementById("anspSub").textContent=`${periodLabel()} · ${inP.length} เรื่องที่แจ้งเข้ามาในช่วงนี้`+(ansp?"":" · เลือก ANSP เพื่อดูรายละเอียดหรือเปิดโหมดนำเสนอ");
+  document.getElementById("presentLabel").textContent=`ข้อมูลของ ${ansp} · ${periodLabel()} · ข้อมูล ณ ${fmt(today())}`;
+
+  const lead=metric(inP,i=>calc[getId(i)].leadOk);
+  const ftr=metric(inP,i=>calc[getId(i)].firstTimeRight);
+  const qBreak=fn=>qtr?"":[1,2,3,4].map(q=>{const cs=pool.filter(i=>{const d=getStart(i);return d&&d.getFullYear()===year&&Math.floor(d.getMonth()/3)+1===q;});const m=metric(cs,fn);return `<span>Q${q} ${m.n?m.p+"%":"—"}</span>`;}).join("");
+
+  const kinds={approval:0,notify:0,unknown:0}; inP.forEach(i=>kinds[calc[getId(i)].kind]++);
+  const out={}; pool.filter(i=>inPeriod(calc[getId(i)].decDate)&&calc[getId(i)].outcome).forEach(i=>{const o=calc[getId(i)].outcome;out[o]=(out[o]||0)+1;});
+  const svc={}; inP.forEach(i=>getServices(i).forEach(s=>svc[s]=(svc[s]||0)+1));
+  const svcTop=Object.entries(svc).sort((a,b)=>b[1]-a[1]).slice(0,4);
+
+  const late=inP.filter(i=>calc[getId(i)].leadOk===false);
+  const docs=inP.filter(i=>calc[getId(i)].firstTimeRight===false);
+
+  let html=`<section class="panel"><h3>ตัวชี้วัด</h3><p>นับจากเรื่องที่แจ้งเข้ามาใน${periodLabel()} · แสดงจำนวนเรื่องคู่กับเปอร์เซ็นต์ทุกครั้ง</p>
+    <div class="krows">
+      ${kpiRow("แจ้งล่วงหน้าทันกำหนด","ขอความเห็นชอบ ≥ 60 วันทำการ · แจ้งล่วงหน้า ≥ 7 วันทำการ · ยกเลิกการให้บริการ ≥ 1 ปี (ไม่นับเหตุสุดวิสัย)",lead,qBreak(i=>calc[getId(i)].leadOk))}
+      ${kpiRow("เอกสารครบตั้งแต่ยื่นครั้งแรก","เรื่องขอความเห็นชอบที่ตรวจเอกสารแล้ว และไม่ต้องขอเอกสารหรือคำชี้แจงเพิ่มเติม",ftr,qBreak(i=>calc[getId(i)].firstTimeRight))}
+    </div>
+    <p class="note">วันที่เปลี่ยนแปลงใช้ Implement Change Date ใน MoCS ONE ซึ่งอาจถูกปรับภายหลังได้ (เช่น เลื่อนวันดำเนินการ) ตัวชี้วัดแรกจึงอาจคลาดเคลื่อนเล็กน้อย</p></section>
+    <section class="ctx">
+      <div class="panel"><h3>จำนวนเรื่อง</h3><p>แจ้งเข้ามาใน${periodLabel()}</p><b class="num">${inP.length}</b>
+        <div class="split"><span>ขอความเห็นชอบ <strong>${kinds.approval}</strong></span><span>แจ้งเพื่อทราบ <strong>${kinds.notify}</strong></span>${kinds.unknown?`<span>ไม่ระบุประเภท <strong>${kinds.unknown}</strong></span>`:""}</div></div>
+      <div class="panel"><h3>ผลการพิจารณา</h3><p>แจ้งผลใน${periodLabel()}</p><b class="num">${Object.values(out).reduce((a,b)=>a+b,0)}</b>
+        <div class="split">${["เห็นชอบ","รับทราบ","ไม่เห็นชอบ"].map(k=>`<span>${k} <strong>${out[k]||0}</strong></span>`).join("")}</div></div>
+      <div class="panel"><h3>Service ที่เปลี่ยนแปลงบ่อย</h3><p>จากเรื่องที่แจ้งเข้ามา</p><b class="num">${Object.keys(svc).length}</b><span class="mut" style="font-size:13px"> ด้าน</span>
+        <div class="split">${svcTop.map(([s,n])=>`<span>${esc(s)} <strong>${n}</strong></span>`).join("")||"<span class='mut'>—</span>"}</div></div>
+    </section>`;
+  const rowList=(arr,why)=>arr.length?`<ul class="list">${arr.slice(0,8).map(i=>`<li><div class="when">${fmt(getStart(i))}</div><div class="what"><b>${esc(getId(i))}</b>${esc(getBrief(i))}<div>${why(i)}</div></div></li>`).join("")}${arr.length>8?`<li class="none">และอีก ${arr.length-8} เรื่อง</li>`:""}</ul>`:`<p class="none">ไม่มี</p>`;
+  html+=`<section class="grid2">
+    <div class="panel"><h3>แจ้งล่วงหน้าไม่ทันกำหนด</h3><p>วันที่แจ้ง (ซ้าย) เทียบกับวันที่จะเปลี่ยนแปลง</p>${rowList(late,i=>{const c=calc[getId(i)];return `เปลี่ยนแปลง ${fmt(getImpl(i))} · แจ้งล่วงหน้า ${c.leadDays??daysBetween(getStart(i),getImpl(i))} ${c.leadDays!=null?"วันทำการ":"วัน"} (ต้อง ${c.leadNeed})`;})}</div>
+    <div class="panel"><h3>ต้องขอเอกสารหรือคำชี้แจงเพิ่มเติม</h3><p>เรื่องที่เอกสารไม่ครบในการยื่นครั้งแรก</p>${rowList(docs,i=>`ขอเพิ่ม ${calc[getId(i)].docReq} ครั้ง`)}</div>
+  </section>`;
+  if(!ansp){
+    const rows=anspList().map(a=>{const cs=allCases.filter(i=>getANSP(i)===a&&inPeriod(getStart(i)));const l=metric(cs,i=>calc[getId(i)].leadOk),f=metric(cs,i=>calc[getId(i)].firstTimeRight);
+      const v=m=>m.n>=3?`${m.p}% <span class="mut">(${m.ok}/${m.n})</span>`:`<span class="mut">${m.n?`${m.ok}/${m.n}`:"—"}</span>`;
+      return `<tr><td class="id">${esc(a)}</td><td class="r num">${cs.length}</td><td class="r num">${v(l)}</td><td class="r num">${v(f)}</td></tr>`;}).join("");
+    html+=`<section class="internal"><h2>สรุปทุก ANSP (ใช้ภายใน)</h2><p class="lede">ANSP แต่ละรายมีปริมาณงานต่างกันมาก ใช้ดูแนวโน้มของแต่ละรายมากกว่าจัดอันดับ</p>
+      <div class="tbl"><table><thead><tr><th>ANSP</th><th class="r">เรื่อง</th><th class="r">แจ้งล่วงหน้าทันกำหนด</th><th class="r">เอกสารครบครั้งแรก</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+  }
+  document.getElementById("anspBody").innerHTML=html;
+}
+function setPresent(on){
+  if(on&&!ansp) return;
+  document.body.classList.toggle("present",on);
+  if(on) showTab("ansp");
+  window.scrollTo(0,0);
+}
+
+// ═══ AI PRODUCTS ═══════════════════════════════════════
+function aiGroups(){ const t0=today(),soon=new Date(t0.getTime()+CFG.aisDays*dayMs),pend=allAI.filter(a=>!aDone(a));
+  return [{key:"open",tone:"",title:"ยังไม่เสร็จ",desc:"ทุกประเภท ที่ยังไม่ Published / Effective",items:pend},
+    {key:"over",tone:"hot",title:"เลยกำหนดส่ง AIS",desc:"Pending และเลย Latest to AIS",items:pend.filter(a=>aStatus(a)==="Pending"&&aLatest(a)&&aLatest(a)<t0)},
+    {key:"soon",tone:"warm",title:`ส่ง AIS ภายใน ${CFG.aisDays} วัน`,desc:"Pending และใกล้ Latest to AIS",items:pend.filter(a=>aStatus(a)==="Pending"&&aLatest(a)&&aLatest(a)>=t0&&aLatest(a)<=soon)},
+    {key:"notam",tone:"",title:"NOTAM ที่ใช้งานอยู่",desc:"Status: Active",items:allAI.filter(a=>aType(a)==="NOTAM"&&aStatus(a)==="Active")}]; }
+function renderAI(){
+  document.getElementById("aiAttention").innerHTML=aiGroups().map(g=>tileHtml(g,g.items.length,aiFocus===g.key,`data-ai="${g.key}"`)).join("");
+  document.querySelectorAll(".tile[data-ai]").forEach(b=>b.onclick=()=>{aiFocus=aiFocus===b.dataset.ai?null:b.dataset.ai;renderAI();});
+  document.getElementById("aiType").innerHTML=["NOTAM","AIP SUP","AIP AMDT"].map(t=>{const a=allAI.filter(x=>aType(x)===t), op=a.filter(x=>!aDone(x)).length, dn=a.length-op;
+    const segs=[["s-op",op],["s-dn",dn]].filter(s=>s[1]);
+    return `<div class="olar w"><b style="font-size:15px">${t}</b><span class="sbar" role="img" aria-label="${t} ยังไม่เสร็จ ${op} เสร็จแล้ว ${dn}">${segs.map(([c,v])=>`<span class="${c}" style="width:${100*v/a.length}%">${v}</span>`).join("")}</span><span class="pt mut">${a.length} รายการ</span></div>`;}).join("");
+  renderAITable();
+}
+function renderAITable(){
+  const q=document.getElementById("aiSearch").value.trim().toLowerCase(), tf=document.getElementById("aiTypeFilter").value, sf=document.getElementById("aiStatusFilter").value;
+  let rows=aiFocus?aiGroups().find(g=>g.key===aiFocus).items:allAI;
+  rows=rows.filter(a=>(!q||aId(a).toLowerCase().includes(q)||String(aRef(a)).toLowerCase().includes(q))&&(!tf||aType(a)===tf)&&(!sf||aStatus(a)===sf));
+  rows=[...rows].sort((a,b)=>(aLatest(a)||aEff(a)||0)-(aLatest(b)||aEff(b)||0));
+  const g=aiFocus&&aiGroups().find(x=>x.key===aiFocus);
+  document.getElementById("aiActiveFilter").innerHTML=g?`<span class="chipf">กรองตาม: ${esc(g.title)} <button aria-label="ล้างตัวกรอง" onclick="aiFocus=null;renderAI()">✕</button></span>`:"";
+  const tb=document.getElementById("aiTable"), t0=today();
+  if(!rows.length){tb.innerHTML=`<tr><td colspan="8" class="empty">ไม่พบรายการตามเงื่อนไขนี้</td></tr>`;return;}
+  tb.innerHTML=rows.map(a=>{const s=aStatus(a),t=aType(a),dl=aLatest(a); let left='<span class="mut">—</span>';
+    if(dl&&!aDone(a)&&s==="Pending"){const d=daysBetween(t0,dl); left=d<0?`<span class="bad">เลยมา ${-d} วัน</span>`:d===0?`<span class="bad">วันนี้</span>`:`<span class="${d<=CFG.aisDays?"warn":"ok"}">${d} วัน</span>`;}
+    const tc=AI_TYPE_C[t]||"#56606B";
+    const ref=t==="AIP AMDT"?(aCycle(a)?`AIRAC ${esc(aCycle(a))}`:"—"):(esc(aRef(a))||"<span class='mut'>ยังไม่มีเลขที่</span>")+(t==="AIP SUP"&&aCycle(a)?`<div class="mut" style="font-size:12px">AIRAC ${esc(aCycle(a))}</div>`:"");
+    return `<tr class="link" tabindex="0" data-id="${esc(aId(a))}"><td class="id">${esc(aId(a))}</td><td><span class="badge" style="background:${tc}1A;color:${tc}">${esc(t)}</span></td>
+      <td>${ref}</td><td>${esc(s)}</td><td>${t==="NOTAM"?'<span class="mut">—</span>':fmt(dl)}</td><td>${t==="NOTAM"?'<span class="mut">—</span>':fmt(aPub(a))}</td><td>${fmt(aEff(a))}</td><td class="r">${left}</td></tr>`;}).join("");
+  tb.querySelectorAll("tr.link").forEach(r=>{r.onclick=()=>openOne(r.dataset.id);r.onkeydown=e=>{if(e.key==="Enter")openOne(r.dataset.id);};});
+}
+
+// ═══ TABS / EVENTS ═════════════════════════════════════
+function showTab(name){
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===name));
+  ["exec","tasks","ansp","ai"].forEach(v=>document.getElementById("view-"+v).hidden=v!==name);
+  document.getElementById("periodCtl").hidden=!(name==="exec"||name==="ansp");
+  document.getElementById("teamChips").hidden=name!=="tasks";
+}
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>showTab(t.dataset.tab));
+["searchInput","statusFilter","anspFilter","scopeFilter"].forEach(id=>document.getElementById(id).addEventListener("input",renderTable));
+["aiSearch","aiTypeFilter","aiStatusFilter"].forEach(id=>document.getElementById(id).addEventListener("input",renderAITable));
+document.getElementById("content").addEventListener("click",e=>{const el=e.target.closest("[data-open]");if(el)openOne(el.dataset.open);});
+document.getElementById("content").addEventListener("keydown",e=>{const el=e.target.closest(".cr[data-open]");if(el&&(e.key==="Enter"||e.key===" ")){e.preventDefault();openOne(el.dataset.open);}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.body.classList.contains("present"))setPresent(false);});
+
+function fillFilters(){
+  document.getElementById("statusFilter").innerHTML='<option value="">ทุกสถานะ</option>'+STATUSES.map(s=>`<option>${s}</option>`).join("");
+  document.getElementById("anspFilter").innerHTML='<option value="">ทุก ANSP</option>'+anspList().map(a=>`<option>${esc(a)}</option>`).join("");
+  document.getElementById("aiStatusFilter").innerHTML='<option value="">ทุกสถานะ</option>'+AI_STATUSES.map(s=>`<option>${s}</option>`).join("");
+}
+
+// ═══ INIT ═════════════════════════════════════════════
+function showErr(m){const e=document.getElementById("errBox");e.textContent=m;e.hidden=false;document.getElementById("loadingDiv").hidden=true;}
+async function refreshAll(){
+  document.getElementById("content").hidden=true; document.getElementById("errBox").hidden=true;
+  const ld=document.getElementById("loadingDiv"); ld.hidden=false;
+  try{
+    if(DEMO){ ({cases:allCases,tracking:allTracking,records:allRecords,ai:allAI}=demoData()); }
+    else{
+      const [c,a]=await Promise.all([fetchList(CFG.lists.cases),fetchList(CFG.lists.ai)]); allCases=c; allAI=a;
+      const soft=async n=>{try{return await fetchList(n);}catch(e){console.warn(e);return [];}};
+      [allTracking,allRecords]=await Promise.all([soft(CFG.lists.tracking),soft(CFG.lists.records)]);
+      const hol=await soft(CFG.lists.holidays);
+      if(hol.length) HOL=new Set(hol.map(h=>toDate(h.HolidayDate)).filter(Boolean).map(iso));
+    }
+    derive(); pickDefaultYear(); fillFilters(); renderPeriodCtl(); renderANSPSel(); renderTeams();
+    document.getElementById("content").hidden=false; ld.hidden=true;
+    renderExec(); renderTasks(); renderANSP(); renderAI();
+    document.getElementById("lastUpdate").textContent=`ข้อมูล ณ ${fmt(today())} · ${new Date().toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"})}`;
+  }catch(err){ showErr("โหลดข้อมูลไม่สำเร็จ: "+err.message+" · กดรีเฟรชเพื่อลองใหม่ ถ้ายังไม่ได้ให้ออกจากระบบแล้วเข้าใหม่"); }
+}
+async function init(){
+  if(DEMO){ document.getElementById("app").hidden=false; document.getElementById("demoNote").hidden=false;
+    document.getElementById("userName").textContent="ผู้ใช้ตัวอย่าง"; return refreshAll(); }
+  if(!msal2){ document.getElementById("app").hidden=false; return showErr("โหลดระบบเข้าสู่ระบบ Microsoft ไม่สำเร็จ ตรวจการเชื่อมต่ออินเทอร์เน็ตแล้วโหลดหน้าใหม่"); }
+  const r=await msal2.handleRedirectPromise().catch(e=>{console.error(e);return null;}); if(r) msal2.setActiveAccount(r.account);
+  const accs=msal2.getAllAccounts(); if(!accs.length){ document.getElementById("loginScreen").hidden=false; return; }
+  document.getElementById("app").hidden=false; document.getElementById("userName").textContent=accs[0].name||accs[0].username;
+  await refreshAll();
+}
+
+// ═══ DEMO DATA (สุ่มแบบคงที่) ═══════════════════════════
+function demoData(){
+  let seed=7; const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647, pick=a=>a[Math.floor(rnd()*a.length)], ri=(a,b)=>a+Math.floor(rnd()*(b-a+1));
+  const t0=today(), addD=(d,n)=>new Date(d.getTime()+n*dayMs), addW=(d,n)=>{const x=new Date(d);let k=0;while(k<n){x.setDate(x.getDate()+1);if(isWork(x))k++;}return x;};
+  const ISO=d=>d?d.toISOString():null;
+  const ANSPS=["AEROTHAI","AEROTHAI","AEROTHAI","AEROTHAI","AEROTHAI","DCA","DCA","AOT","TMD"];
+  const TEAMS=["NA","NA","NA","TM","TM","AF","AM","IC","SR","NS"];
+  const APPROVAL=["คู่มือการดำเนินงาน","การดำเนินงานอื่นที่อาจกระทบความปลอดภัย","ใบอนุญาตจัดตั้งเครื่องอำนวยฯ","คู่มือการดำเนินงานเครื่องอำนวยฯ"];
+  const BRIEFS=["ติดตั้ง DVOR/DME ใหม่","ปรับปรุงระบบ ADS-B ground station","เปลี่ยนแปลงโครงสร้าง ATS route","ออกแบบ RNP APCH","ย้ายศูนย์ควบคุมระบบสื่อสาร VHF","ปรับปรุงขั้นตอนการรับรองบุคลากร",
+    "ปรับเวลาให้บริการหอบังคับการบิน","ปรับปรุงขั้นตอนค้นหาและช่วยเหลือ","เปลี่ยนระบบ AMHS","เปลี่ยน ILS localizer","ปรับปรุง SID/STAR","ติดตั้ง AWOS ใหม่","หยุดให้บริการเรดาร์ชั่วคราว","ปรับปรุงคู่มือการดำเนินงาน"];
+  const LOC=["BKK","DMK","CNX","HKT","HDY","KBV","URT","HQ","CEI"];
+  const SVC=["CNS","ATM-ATS","ATM-ASM","IFPD","AIS","MET","SAR"];
+  const cases=[],tracking=[],records=[],ai=[]; const seq={};
+  for(let k=0;k<34;k++){
+    const start=addD(t0,-ri(5,270)); while(!isWork(start)) start.setDate(start.getDate()+1);
+    const tm=pick(TEAMS), ansp=tm==="NS"?"TMD":pick(ANSPS), notify=rnd()<0.2;
+    seq[tm]=(seq[tm]||0)+1; const id=`CHG26-${tm}-${String(seq[tm]).padStart(3,"0")}`;
+    const types=notify?[pick(["แจ้งล่วงหน้า","แจ้งล่วงหน้า","เหตุสุดวิสัย"])]:[pick(APPROVAL)].concat(rnd()<0.3?[pick(APPROVAL)]:[]);
+    const leadW=notify?ri(3,15):ri(35,110); const impl=addW(start,leadW);
+    let phase,status,dec=null,oversight=rnd()<0.4;
+    if(notify){ dec=addW(start,ri(1,8)); if(dec>t0){phase="Phase 1 - Change Notification";status="Submitted";dec=null;} else {phase="Closed";status="Acknowledged";} }
+    else{
+      let clock=start;
+      if(rnd()<0.4){ const req=addW(start,ri(8,20)), back=addW(req,ri(5,30));
+        tracking.push({Title:id,Status:back>t0?"Pending":"Done",TrackingType:"ขอเอกสาร/คำชี้แจงเพิ่มเติม",Created:ISO(req),FollowupDate:ISO(addW(req,30)),CompletedDate:back>t0?null:ISO(back)});
+        if(back>t0){ phase="Phase 2 - Evaluation"; status="Revise"; } clock=back; }
+      if(!status){ dec=addW(clock,ri(18,62));
+        if(dec>t0){ dec=null; const age=daysBetween(start,t0); phase=age<6?"Phase 1 - Change Notification":"Phase 2 - Evaluation"; status=age<6?"Submitted":pick(["Under Review","Under Review","Oversight"]); }
+        else if(rnd()<0.08){ phase="Closed"; status="Rejected"; }
+        else{ const im=impl<dec?addD(dec,ri(15,50)):impl;
+          if(im>t0){phase="Phase 3 - Implementation";status="Approved";}
+          else if(daysBetween(im,t0)<35){ if(oversight){phase="Phase 4 - Verification";status="Under Review";} else {phase="Phase 3 - Implementation";status="In Progress";} }
+          else { if(rnd()<0.4){phase="Phase 5 - Post-Implementation";status="Post-Implementation";} else {phase="Closed";status="Closed";} } }
+      }
+    }
+    if(dec) records.push({Title:id,EntryType:"ผลการพิจารณา",Phase:"Phase 2 - Evaluation",EntryDate:ISO(dec)});
+    if(!notify&&rnd()<0.7){ const rt=pick(["TM","AF","AM","SR","NA","IC"].filter(x=>x!==tm)), cr=addW(start,ri(1,6)), due=addW(cr,5);
+      if(cr<=t0&&!String(phase).startsWith("Phase 1")){ const base={Title:id,TrackingType:"ความเห็นกองที่เกี่ยวข้อง",FollowupAction:"ความเห็นของกอง "+rt,Created:ISO(cr),FollowupDate:ISO(due)};
+        if(status==="Under Review"||status==="Oversight"||(status==="Submitted"&&!dec)) { if(rnd()<0.55) tracking.push({...base,Status:"Pending"}); else tracking.push({...base,Status:"Done",CompletedDate:ISO(addW(cr,ri(2,7))),Note:"ตอบแล้ว"}); }
+        else { const r=rnd(); tracking.push(r<0.12?{...base,Status:"Done",CompletedDate:ISO(addW(cr,6)),Note:"ปิดเมื่อแจ้งผลการพิจารณา"}:{...base,Status:"Done",CompletedDate:ISO(addW(cr,ri(1,r<0.3?8:5))),Note:"ตอบแล้ว"}); } } }
+    records.push({Title:id,EntryType:"รับจากผู้ขอ",Phase:"Phase 1 - Change Notification",EntryDate:ISO(start)});
+    if(phase!=="Closed"&&rnd()<0.45) tracking.push({Title:id,Status:"Pending",TrackingType:pick(["ติดตามการดำเนินการตามแผน","ดำเนินการตามเงื่อนไข","อื่น ๆ"]),Created:ISO(addD(t0,-ri(5,40))),FollowupDate:ISO(addD(t0,ri(-12,25)))});
+    if(!notify&&rnd()<0.3){ const lat=addD(t0,ri(-6,30)); ai.push({Title:id,ProductType:pick(["AIP AMDT","AIP SUP"]),Status:lat<addD(t0,-3)&&rnd()<0.5?"Submitted":"Pending",AMDTCycle:`AMDT ${ri(9,13)%13+1}/26`,
+      LatesttoAISDate:ISO(lat),PublicationDate:ISO(addD(lat,13)),EffectiveDate:ISO(addD(lat,55))}); }
+    if(rnd()<0.15) ai.push({Title:id,ProductType:"NOTAM",Status:pick(["Active","Pending","Expired"]),ReferenceNo_x002e_:`A${ri(1000,4999)}/26`,EffectiveDate:ISO(addD(t0,ri(-20,20)))});
+    cases.push({Title:id,CHGinbrief:pick(BRIEFS),ANSP:ansp,Location:pick(LOC),AffectedServices:{results:[pick(SVC)].concat(rnd()<0.4?[pick(SVC)]:[]).filter((v,i,a)=>a.indexOf(v)===i)},
+      Team:tm,Phase:phase,CHGStatus:status,Regulations:{results:types},OversightRequired0:oversight,
+      StartDate:ISO(start),Created:ISO(start),Modified:ISO(addD(t0,-ri(0,45))),ImplementChangeDate:ISO(impl)});
+  }
+  return {cases,tracking,records,ai};
+}
+
+init();
+</script>
+</body>
+</html>
